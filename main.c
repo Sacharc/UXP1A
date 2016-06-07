@@ -29,6 +29,7 @@ int getNumberStart(char* string, char** numberStart);
 char* getWord(char *str);
 char* getWordsInsideQuotes(char *str);
 char* trimWhitespace(char *str);
+void freeInputContent(char *, char *);
 
 void printErrorMessage(int status);
 
@@ -99,6 +100,7 @@ int main(int argc, char **argv) {
 #define ERR_NO_MATCH_STRING 8
 #define ERR_WRONG_MATCH_STRING 9
 #define ERR_NO_TIMEOUT 10
+#define ERR_NOT_FOUND 11
 
 int input(char* line, size_t lineLength) {
     char* matchString = strtok(NULL, " \t");
@@ -110,7 +112,7 @@ int input(char* line, size_t lineLength) {
     // Check if timeout is specified
     char* option = strtok(NULL, " \t");
 
-    int timeout = -1;
+    int timeout = 0;
     if (option != NULL) {
         if(strcmp(option, "timeout") == 0) {
             char *timeoutString = strtok(NULL, " \t");
@@ -133,29 +135,68 @@ int input(char* line, size_t lineLength) {
             return ERR_UNRECOGNIZED_OPT;
         }
     }
-    char* typeString = strtok(matchString, ",");
+
+    char* input = NULL;
+    size_t offset = 0;
+
+    size_t matchStringLength = strlen(matchString);
+
+    // Maximum number of variables is the length of matchString
+    char types[matchStringLength];
+    types[0] = '\0';
+
+    // We will need to modify matchString in order to extract it's parts, so we make copy of it first.
+    char matchStringCopy[matchStringLength + 1];
+    strcpy(matchStringCopy, matchString);
+
+    char* typeString = strtok(matchStringCopy, ",");
     int error;
+
     while(1) {
         switch(typeString[0]) {
             case 'i':
                 error = checkIntegerMatchString(typeString);
                 if(error) {
+                    freeInputContent(input, types);
+                    free(input);
                     return ERR_WRONG_MATCH_STRING;
                 }
+                strcat(types, "i");
+                input = (char*)realloc(input, offset + sizeof(int*));
+                int* integer = (int*)malloc(sizeof(int));
+                *((int**)(input + offset)) = integer;
+                offset += sizeof(int*);
                 break;
-            case 'f':
+            case 'f': {
                 error = checkFloatMatchString(typeString);
                 if(error) {
+                    freeInputContent(input, types);
+                    free(input);
                     return ERR_WRONG_MATCH_STRING;
                 }
+                strcat(types, "f");
+                input = (char*)realloc(input, offset + sizeof(float*));
+                float* floatingPoint = (float*)malloc(sizeof(float));
+                *((float**)(input + offset)) = floatingPoint;
+                offset += sizeof(float*);
                 break;
+            }
             case 's':
                 error = checkStringMatchString(typeString);
                 if(error) {
+                    freeInputContent(input, types);
+                    free(input);
                     return ERR_WRONG_MATCH_STRING;
                 }
+                strcat(types, "s");
+                input = (char*)realloc(input, offset + sizeof(char**));
+                char* string = (char*)malloc(sizeof(char) * 100);
+                *((char**)(input + offset)) = string;
+                offset += sizeof(char*);
                 break;
             default:
+                freeInputContent(input, types);
+                free(input);
                 return ERR_WRONG_MATCH_STRING;
         }
         typeString = strtok(NULL, ",");
@@ -163,6 +204,68 @@ int input(char* line, size_t lineLength) {
             break;
         }
     }
+
+    // Get data
+    dynamic_va_list va_list_linda;
+    dynamic_va_start(&va_list_linda, input);
+
+    // For testing purpose
+    vscanf("%i %s %f", va_list_linda._va_list);
+
+//    int error = vlinda_input(timeout, matchString, va_list_linda._va_list);
+//    if(error) {
+//        return ERR_NOT_FOUND;
+//    }
+
+    // Build format string for vprintf
+
+    //6 characters per every printed variable and 2 characters for new line and 0
+    size_t formatStringLength = matchStringLength * 6 + 2;
+    char printfFormatString[formatStringLength];
+    printfFormatString[0] = '\0';
+
+    size_t typesLength = strlen(types);
+    for(size_t i = 0; i < typesLength; ++i) {
+        strncat(printfFormatString, types + i, 1);
+        strcat(printfFormatString, ": %");
+        strncat(printfFormatString, types + i, 1);
+        strcat(printfFormatString, " ");
+    }
+    strcat(printfFormatString, "\n");
+
+    // Get va_list for vprintf
+
+    char* output = NULL;
+    offset = 0;
+    for(size_t i = 0; i < typesLength; ++i) {
+        switch(types[i]) {
+            case 'i':
+                output = (char*)realloc(output, offset + VLIST_CHUNK_SIZE);
+                *((int*)(output + offset)) = **((int**)(input + offset));
+                offset += VLIST_CHUNK_SIZE;
+                break;
+            case 'f':
+                output = (char*)realloc(output, offset + VLIST_CHUNK_SIZE);
+                *((float*)(output + offset)) = **((float**)(input + offset));
+                offset += VLIST_CHUNK_SIZE;
+                break;
+            case 's':
+                output = (char*)realloc(output, offset + VLIST_CHUNK_SIZE);
+                *((char**)(output + offset)) = *((char**)(input + offset));
+                offset += VLIST_CHUNK_SIZE;
+                break;
+        }
+    }
+
+    dynamic_va_list va_list_printf;
+    dynamic_va_start(&va_list_printf, output);
+
+    vprintf(printfFormatString, va_list_printf._va_list);
+
+    // Free memory
+    dynamic_va_end(&va_list_printf);
+    freeInputContent(input, types);
+    dynamic_va_end(&va_list_linda);
     return 0;
 }
 
@@ -252,14 +355,10 @@ int output(char* line, size_t lineLength) {
     dynamic_va_start(&args, output);
 
 
-//    linda_init();
 
 //    vlinda_output(infoString, args._valist);
 
     dynamic_va_end(&args);
-
-//    linda_end();
-
     return 0;
 }
 
@@ -294,6 +393,9 @@ void printErrorMessage(int status) {
             break;
         case ERR_NO_TIMEOUT:
             printf("No timeout\n");
+            break;
+        case ERR_NOT_FOUND:
+            printf("Tuple not found\n");
             break;
     }
 }
@@ -466,6 +568,27 @@ int getNumberStart(char* string, char** numberStart) {
             return -1;
     }
     return 0;
+}
+
+void freeInputContent(char *input, char *types) {
+    size_t length = strlen(types);
+    char* currentPlace = input;
+    for(size_t i = 0; i < length; ++i) {
+        switch(types[i]) {
+            case 'i':
+                free(*((int**)currentPlace));
+                currentPlace += sizeof(int*);
+                break;
+            case 'f':
+                free(*((float**)currentPlace));
+                currentPlace += sizeof(float*);
+                break;
+            case 's':
+                free(*((char**)currentPlace));
+                currentPlace += sizeof(char*);
+                break;
+        }
+    }
 }
 
 //http://stackoverflow.com/a/122721/5459240
