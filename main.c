@@ -69,6 +69,7 @@ int main(int argc, char **argv) {
 
         char *instruction = strtok(line, "  \t");
         if(strcmp(instruction, "OUTPUT") == 0) {
+//            linda_output("isf", 777, "testowe", 3.14);
             status = output(line, lineLength);
             if(status) {
                 printErrorMessage(status);
