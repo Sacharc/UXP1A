@@ -340,6 +340,7 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 
         //Wykopiowujemy do dedykowanego bufora
         strncpy(current_match_string_token, current_match_string_token_start, current_match_string_token_length);
+        current_match_string_token[current_match_string_token_length] = NULL;
 
         //Do kolejnego obiegu pętli przesuwamy start za end. current_match_string_token_start może być nieprawidłowy (wskazywać za końcem), ale to jeszcze sprawdzi nam check na dole
         current_match_string_token_start = current_match_string_token_end + 1;
@@ -367,10 +368,11 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
                         start_int_position = 2;
                     }
 
-                    //Tutaj jest lipa bo czytalismy te inty jakby byly zserializowane, a trzeba je zamieniac na inty jakos
+                    //Tutaj ok
                     int match_string_int;
-                    memcpy(&match_string_int, &current_match_string_token[start_int_position], sizeof(int));
+                    sscanf(&current_match_string_token[start_int_position], "%d", &match_string_int);
 
+                    //TODO zle odczytuje, int = 0
                     int tuple_to_match_int;
                     memcpy(&tuple_to_match_int, &tuple_to_match[tuple_to_match_position], sizeof(int));
 
@@ -396,7 +398,7 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
                     }
 
                     double match_string_double;
-                    memcpy(&match_string_double, &current_match_string_token[start_double_position], sizeof(double));
+                    sscanf(&current_match_string_token[start_double_position], "%lf", &match_string_double);
 
                     double tuple_to_match_double;
                     memcpy(&tuple_to_match_double, &tuple_to_match[tuple_to_match_position], sizeof(double));
