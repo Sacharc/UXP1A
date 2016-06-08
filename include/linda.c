@@ -49,15 +49,15 @@ int linda_init()
 {
     /* Allocate a shared memory segment.  */
     //printf(stderr, "IPC_PRIVATE == %#lx\n", IPC_PRIVATE);
-    key_t key = ftok("~/UXP1A", 1); // z góry zadany id klucza naszego segemntu pozwala na obsluzenie wielu initow - 1 raz pamiec sie tworzy, potem tylko zwraca segemnt_id juz istniejacej pamieci
-    if (key == -1)
+    key_t key = ftok("/tmp", 1); // z góry zadany id klucza naszego segemntu pozwala na obsluzenie wielu initow - 1 raz pamiec sie tworzy, potem tylko zwraca segemnt_id juz istniejacej pamieci
+    if (key == (key_t) -1)
     {
-        perror("key == -1");
+        perror("IPC error: ftok");
     }
     int segment_id = shmget(key, sizeof(struct mem), IPC_CREAT | 0660);
-    if (segment_id == -1) // shmget niepowodzenie, mozliwe ze nie istnieje
+    if (segment_id == -1)
     {
-        perror("segment_id == -1");
+        perror("IPC error: shmget. Probably doesn't exist.");
     }
     /* Attach the shared memory segment.  */
     linda_memory = (struct mem*) shmat (segment_id, NULL, 0);
@@ -66,7 +66,7 @@ int linda_init()
     struct shmid_ds shm_data;
     if(shmctl(segment_id, IPC_STAT, &shm_data) == -1)
     {
-        perror("shmctl(segment_id, IPC_STAT, &shm_data) == -1");
+        perror("IPC error: shmctl()");
     }
 
     if (shm_data.shm_nattch == 1)
@@ -78,15 +78,15 @@ int linda_init()
 int linda_end()
 {
     /* Detach the shared memory segment.  */
-    if(shmdt(linda_memory) != 0)
+    if(shmdt(linda_memory) == -1)
     {
-        perror("shmdt(linda_memory) == -1");
+        perror("IPC error shmdt(). Cannot detach memory.");
     }
 
     /* Deallocate the shared memory segment.  */
     if(shmctl(linda_memory, IPC_RMID, NULL) == -1)
     {
-        perror("shmctl(linda_memory, IPC_RMID, NULL) == -1");
+        perror("IPC error shmctl(). Cannot deallocate shared memory.");
     }
 }
 
