@@ -507,41 +507,41 @@ int extract_tuple_from_shmem(const char * match_string)
 	return -1;
 }
 
-bool linda_input(int timeout, const char * match_string, ...)
+bool linda_in_generic(bool to_remove, int timeout, const char * match_string, ...)
 {
 	va_list v_init;
 	va_start(v_init, match_string);
 
-	bool ret = vlinda_input(timeout, match_string, &v_init);
+	bool ret = vlinda_in_generic(to_remove, timeout, match_string, &v_init);
 
 	va_end(v_init);
 	return ret;
 }
 
-bool vlinda_input(int timeout, const char * match_string, va_list * v_init)
+bool vlinda_in_generic(bool to_remove, int timeout, const char * match_string, va_list * v_init)
 {
 	int tuple_index = extract_tuple_from_shmem(match_string);
 
-	if(tuple_index == -1)
+	if (tuple_index == -1)
 	{
 		//printf("Matched tuple not found\n");
 		return false;
 	}
-	
+
 	//Otrzymaliśmy krotkę z extract_tuple_from_shmem, więc jej dane na pewno zgadzają się z tym, co w va_list
-	const struct tuple * found_tuple = linda_memory->first_tuple + tuple_index;
+	const struct tuple *found_tuple = linda_memory->first_tuple + tuple_index;
 	const size_t info_string_length = strlen(found_tuple->tuple_content);
 
 	size_t info_string_position = 0;
 	size_t tuple_position = info_string_length + 1;
-	
+
 	va_list va_read;
 	va_copy(va_read, *v_init);
 
 	//Memcpy for arguments in va_list
-	while(found_tuple->tuple_content[info_string_position] != 0)
+	while (found_tuple->tuple_content[info_string_position] != 0)
 	{
-		switch(found_tuple->tuple_content[info_string_position])
+		switch (found_tuple->tuple_content[info_string_position])
 		{
 			case 'i':
 			{
@@ -564,24 +564,44 @@ bool vlinda_input(int timeout, const char * match_string, va_list * v_init)
 			}
 			default:
 			{
-				printf("Unknown character in info_string: `%c` (%d)", found_tuple->tuple_content[info_string_position], found_tuple->tuple_content[info_string_position]);
+				printf("Unknown character in info_string: `%c` (%d)", found_tuple->tuple_content[info_string_position],
+					   found_tuple->tuple_content[info_string_position]);
 				break;
 			}
 		}
 		++info_string_position;
 	}
-	
+
 	va_end(va_read);
-	
-	//Usuń krotkę, przesuń pozostałe krotki do tyłu
-	memcpy(&linda_memory->first_tuple[tuple_index], &linda_memory->first_tuple[tuple_index + 1], (--linda_memory->tuple_count - tuple_index) * sizeof(struct tuple));
-	if (linda_logging)
+
+	if (to_remove)
 	{
-		syslog(6, "Removed tuple");
+		//Usuń krotkę, przesuń pozostałe krotki do tyłu
+		memcpy(&linda_memory->first_tuple[tuple_index], &linda_memory->first_tuple[tuple_index + 1],
+			   (--linda_memory->tuple_count - tuple_index) * sizeof(struct tuple));
+		if (linda_logging)
+		{
+			syslog(6, "Removed tuple");
+		}
 	}
 	return true;
 }
 
+
+bool linda_input(int timeout, const char * match_string, ...)
+{
+	va_list v_init;
+	va_start(v_init, match_string);
+
+	bool ret = vlinda_input(timeout, match_string, &v_init);
+
+	va_end(v_init);
+	return ret;
+}
+bool vlinda_input(int timeout, const char * match_string, va_list * v_init)
+{
+	return vlinda_in_generic(true, timeout, match_string, v_init);
+}
 bool linda_read(int timeout, const char * match_string, ...)
 {
 	va_list v_init;
@@ -594,5 +614,5 @@ bool linda_read(int timeout, const char * match_string, ...)
 }
 bool vlinda_read(int timeout, const char * match_string, va_list * v_init)
 {
-	return vlinda_input(timeout, match_string, v_init);
+	return vlinda_in_generic(false, timeout, match_string, v_init);
 }
