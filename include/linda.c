@@ -8,9 +8,6 @@
 #include <assert.h>
 #include <errno.h>
 
-#define INFO_STRING_PARAM_NOT_RECOGNIZED "Info string parameter not recognized"
-#define MATCH_STRING_PARAM_NOT_RECOGNIZED "Match string parameter not recognized"
-#define OPERATOR_NOT_REGOGNIZED "Operator not recognized"
 #define FTOK_PATH "/tmp"
 
 struct mem * linda_memory = NULL;
@@ -194,7 +191,7 @@ bool vlinda_output(const char * info_string, va_list * v_init)
 			}
 			default:
 			{
-				printf(INFO_STRING_PARAM_NOT_RECOGNIZED);
+				printf("Unknown character in info_string: `%c` (%d)", info_string[info_string_position], info_string[info_string_position]);
 				break;
 			}
 		}
@@ -384,7 +381,7 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 				}
 				default:
 				{
-					printf(MATCH_STRING_PARAM_NOT_RECOGNIZED);
+					printf("Unknown match_string character: `%c` (%d)", current_match_string_token[0], current_match_string_token[0]);
 					break;
 				}
 			}
@@ -437,7 +434,7 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 				}
 				default:
 				{
-					printf(MATCH_STRING_PARAM_NOT_RECOGNIZED);
+					printf("Unknown match_string character: `%c` (%d)", current_match_string_token[0], current_match_string_token[0]);
 					break;
 				}
 			}
@@ -529,7 +526,7 @@ bool vlinda_input(int timeout, const char * match_string, va_list * v_init)
 			}
 			default:
 			{
-				printf(INFO_STRING_PARAM_NOT_RECOGNIZED);
+				printf("Unknown character in info_string: `%c` (%d)", found_tuple->tuple_content[info_string_position], found_tuple->tuple_content[info_string_position]);
 				break;
 			}
 		}
