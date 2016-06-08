@@ -40,6 +40,9 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 
 int extract_tuple_from_shmem(const char * match_string);
 
+bool linda_in_generic(bool to_remove, int timeout, const char * match_string, ...);
+bool vlinda_in_generic(bool to_remove, int timeout, const char * match_string, va_list * v_init);
+
 bool linda_input(int timeout, const char * match_string, ...);
 bool vlinda_input(int timeout, const char * match_string, va_list * v_init);
 

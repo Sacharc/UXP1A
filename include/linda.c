@@ -467,18 +467,18 @@ int extract_tuple_from_shmem(const char * match_string)
 	return -1;
 }
 
-bool linda_input(int timeout, const char * match_string, ...)
+bool linda_in_generic(bool to_remove, int timeout, const char * match_string, ...)
 {
 	va_list v_init;
 	va_start(v_init, match_string);
 
-	bool ret = vlinda_input(timeout, match_string, &v_init);
+	bool ret = vlinda_in_generic(to_remove, timeout, match_string, &v_init);
 
 	va_end(v_init);
 	return ret;
 }
 
-bool vlinda_input(int timeout, const char * match_string, va_list * v_init)
+bool vlinda_in_generic(bool to_remove, int timeout, const char * match_string, va_list * v_init)
 {
 	int tuple_index = extract_tuple_from_shmem(match_string);
 
@@ -535,11 +535,29 @@ bool vlinda_input(int timeout, const char * match_string, va_list * v_init)
 	
 	va_end(va_read);
 	
-	//Usuń krotkę, przesuń pozostałe krotki do tyłu
-	memcpy(&linda_memory->first_tuple[tuple_index], &linda_memory->first_tuple[tuple_index + 1], (--linda_memory->tuple_count - tuple_index) * sizeof(struct tuple));
+	if(to_remove)
+	{
+		//Usuń krotkę, przesuń pozostałe krotki do tyłu
+		memcpy(&linda_memory->first_tuple[tuple_index], &linda_memory->first_tuple[tuple_index + 1], (--linda_memory->tuple_count - tuple_index) * sizeof(struct tuple));
+	}
 	return true;
 }
 
+
+bool linda_input(int timeout, const char * match_string, ...)
+{
+	va_list v_init;
+	va_start(v_init, match_string);
+
+	bool ret = vlinda_input(timeout, match_string, &v_init);
+
+	va_end(v_init);
+	return ret;
+}
+bool vlinda_input(int timeout, const char * match_string, va_list * v_init)
+{
+	return vlinda_in_generic(true, timeout, match_string, v_init);
+}
 bool linda_read(int timeout, const char * match_string, ...)
 {
 	va_list v_init;
@@ -552,5 +570,5 @@ bool linda_read(int timeout, const char * match_string, ...)
 }
 bool vlinda_read(int timeout, const char * match_string, va_list * v_init)
 {
-	return vlinda_input(timeout, match_string, v_init);
+	return vlinda_in_generic(false, timeout, match_string, v_init);
 }
