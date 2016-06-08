@@ -7,6 +7,8 @@
 #include <sys/shm.h>
 #include <assert.h>
 #include <errno.h>
+#include <unistd.h>
+
 
 #define FTOK_PATH "/tmp"
 
@@ -49,6 +51,22 @@ bool linda_init()
 
 	if(shm_data.shm_nattch == 1)
 	{
+		printf("-> Initializing!\n");
+		
+		//mem_mutex
+		pthread_mutexattr_t mem_mutex_attr;
+		pthread_mutexattr_init(&mem_mutex_attr);
+		pthread_mutexattr_setpshared(&mem_mutex_attr, PTHREAD_PROCESS_SHARED);
+		pthread_mutex_init(&linda_memory->mem_mutex, &mem_mutex_attr);
+		pthread_mutexattr_destroy(&mem_mutex_attr);
+		
+		//output_cond
+		pthread_condattr_t output_cond_attr;
+		pthread_condattr_init(&output_cond_attr);
+		pthread_condattr_setpshared(&output_cond_attr, PTHREAD_PROCESS_SHARED);
+		pthread_cond_init(&linda_memory->output_cond, &output_cond_attr);
+		pthread_condattr_destroy(&output_cond_attr); 
+		
 		linda_memory->tuple_count = 0;
 	}
 	
@@ -57,6 +75,19 @@ bool linda_init()
 
 void linda_end()
 {
+	//Destroy members if we are the last instance
+	struct shmid_ds shm_data;
+	if(shmctl(linda_segment_id, IPC_STAT, &shm_data) == -1)
+	{
+		printf("IPC error: shmctl(): %d", errno);
+	}
+	if(shm_data.shm_nattch == 1)
+	{
+		printf("-> Cleaning up!\n");
+		pthread_cond_destroy(&linda_memory->output_cond);
+		pthread_mutex_destroy(&linda_memory->mem_mutex);
+	}
+	
 	/* Detach the shared memory segment.  */
 	if(shmdt(linda_memory) == -1)
 	{
@@ -101,6 +132,32 @@ bool linda_output(const char * info_string, ...)
 }
 
 bool vlinda_output(const char * info_string, va_list * v_init)
+{
+	if(pthread_mutex_lock(&linda_memory->mem_mutex) != 0)
+	{
+		printf("pthread_mutex_lock(): %d", errno);
+		return false;
+	}
+	
+	bool inserted = vlinda_output_unsafe(info_string, v_init);
+	
+	if(pthread_mutex_unlock(&linda_memory->mem_mutex) != 0)
+	{
+		printf("pthread_mutex_unlock(): %d", errno);
+		return false;
+	}
+	
+	if(inserted)
+	{
+		if(pthread_cond_broadcast(&linda_memory->output_cond) != 0)
+		{
+			printf("pthread_cond_broadcast(): %d", errno);
+		}
+	}
+	
+	return inserted;
+}
+bool vlinda_output_unsafe(const char * info_string, va_list * v_init)
 {
 	if(linda_memory->tuple_count >= TUPLE_COUNT)
 	{
@@ -467,20 +524,40 @@ int extract_tuple_from_shmem(const char * match_string)
 	return -1;
 }
 
-bool linda_in_generic(bool to_remove, int timeout, const char * match_string, ...)
-{
-	va_list v_init;
-	va_start(v_init, match_string);
-
-	bool ret = vlinda_in_generic(to_remove, timeout, match_string, &v_init);
-
-	va_end(v_init);
-	return ret;
-}
-
 bool vlinda_in_generic(bool to_remove, int timeout, const char * match_string, va_list * v_init)
 {
-	int tuple_index = extract_tuple_from_shmem(match_string);
+	if(pthread_mutex_lock(&linda_memory->mem_mutex) != 0)
+	{
+		printf("pthread_mutex_lock(): %d", errno);
+		return false;
+	}
+	
+	bool result = vlinda_in_generic_unsafe(to_remove, timeout, match_string, v_init);
+	
+	if(pthread_mutex_unlock(&linda_memory->mem_mutex) != 0)
+	{
+		printf("pthread_mutex_unlock(): %d", errno);
+		return false;
+	}
+	
+	return result;
+}
+bool vlinda_in_generic_unsafe(bool to_remove, int timeout, const char * match_string, va_list * v_init)
+{
+	int tuple_index -1;
+	
+	struct timeval now;
+	gettimeofday(&now, NULL);
+	
+	
+	struct timeval timeout_timeval; //Po tym timestampie poddajemy się z szukaniem
+	
+	while(true)
+	{
+		tuple_index = extract_tuple_from_shmem(match_string);
+		if(tuple_index != -1)
+			break;
+	}
 
 	if(tuple_index == -1)
 	{

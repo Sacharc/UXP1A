@@ -3,8 +3,8 @@
 #define TEST_LINDA_H
 
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdarg.h>
+#include <pthread.h>
 
 #define TUPLE_COUNT 128
 #define TUPLE_CONTENT_LENGTH 128
@@ -16,6 +16,9 @@ struct tuple
 
 struct mem
 {
+	pthread_mutex_t mem_mutex;
+	pthread_cond_t output_cond;
+	
     size_t tuple_count;
     struct tuple first_tuple[TUPLE_COUNT];
 };
@@ -29,6 +32,7 @@ size_t string_to_tuple(const char * input, char * output);
 
 bool linda_output(const char * info_string, ...);
 bool vlinda_output(const char * info_string, va_list * v_init);
+bool vlinda_output_unsafe(const char * info_string, va_list * v_init);
 
 bool compare_string(const char * operator_, const char * string_a, const char * string_b);
 bool compare_int(const char * operator_, int a, int b);
@@ -40,8 +44,8 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 
 int extract_tuple_from_shmem(const char * match_string);
 
-bool linda_in_generic(bool to_remove, int timeout, const char * match_string, ...);
 bool vlinda_in_generic(bool to_remove, int timeout, const char * match_string, va_list * v_init);
+bool vlinda_in_generic_unsafe(bool to_remove, int timeout, const char * match_string, va_list * v_init);
 
 bool linda_input(int timeout, const char * match_string, ...);
 bool vlinda_input(int timeout, const char * match_string, va_list * v_init);
