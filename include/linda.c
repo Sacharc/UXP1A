@@ -7,8 +7,11 @@
 #include <sys/shm.h>
 #include <assert.h>
 #include <errno.h>
+#include <syslog.h>
 
 #define FTOK_PATH "/tmp"
+
+bool linda_logging = true;
 
 struct mem * linda_memory = NULL;
 int linda_segment_id = 0;
@@ -17,9 +20,15 @@ bool linda_init()
 {
 	//Create virtual memory key
 	key_t key = ftok(FTOK_PATH, 1);
+	openlog("linda", LOG_PID, 0);
 	if(key == (key_t) -1)
 	{
 		printf("IPC error: ftok: %d", errno);
+		if (linda_logging)
+		{
+			syslog(3, "IPC error: ftok: %d", errno);
+		}
+		closelog();
 		return false;
 	}
 	
@@ -28,6 +37,11 @@ bool linda_init()
 	if(linda_segment_id == -1)
 	{
 		printf("IPC error: shmget: %d", errno);
+		if (linda_logging)
+		{
+			syslog(3, "IPC error: shmget: %d", errno);
+		}
+		closelog();
 		return false;
 	}
 	
@@ -36,6 +50,11 @@ bool linda_init()
 	if(linda_memory == NULL)
 	{
 		printf("IPC error: linda_memory: %d", errno);
+		if (linda_logging)
+		{
+			syslog(3, "IPC error: linda_memory: %d", errno);
+		}
+		closelog();
 		return false;
 	}
 
@@ -44,6 +63,11 @@ bool linda_init()
 	if(shmctl(linda_segment_id, IPC_STAT, &shm_data) == -1)
 	{
 		printf("IPC error: shmctl(): %d", errno);
+		if (linda_logging)
+		{
+			syslog(3, "IPC error: shmctl(): %d", errno);
+		}
+		closelog();
 		return false;
 	}
 
@@ -61,13 +85,22 @@ void linda_end()
 	if(shmdt(linda_memory) == -1)
 	{
 		printf("IPC error shmdt(). Cannot detach memory.");
+		if (linda_logging)
+		{
+			syslog(3, "IPC error shmdt(). Cannot detach memory.");
+		}
 	}
 
 	/* Deallocate the shared memory segment.  */
 	if(shmctl(linda_segment_id, IPC_RMID, NULL) == -1)
 	{
 		printf("IPC error shmctl(). Cannot deallocate shared memory.");
+		if (linda_logging)
+		{
+			syslog(3, "IPC error shmctl(). Cannot deallocate shared memory.");
+		}
 	}
+	closelog();
 }
 
 //OUTPUT Functions
@@ -105,6 +138,10 @@ bool vlinda_output(const char * info_string, va_list * v_init)
 	if(linda_memory->tuple_count >= TUPLE_COUNT)
 	{
 		printf("Tuple memory exhausted (%lu) (%u)", linda_memory->tuple_count, TUPLE_COUNT);
+		if (linda_logging)
+		{
+			syslog(6, "Tuple memory exhausted (%lu) (%u)", linda_memory->tuple_count, TUPLE_COUNT);
+		}
 		return false;
 	}
 	
@@ -200,7 +237,10 @@ bool vlinda_output(const char * info_string, va_list * v_init)
 	}
 	
 	va_end(va_read);
-
+	if (linda_logging)
+	{
+		syslog(6, "Saved tuple");
+	}
 	return true;
 }
 
@@ -488,8 +528,6 @@ bool vlinda_input(int timeout, const char * match_string, va_list * v_init)
 		return false;
 	}
 	
-	printf("Matching tuple found: %d\n", tuple_index);
-
 	//Otrzymaliśmy krotkę z extract_tuple_from_shmem, więc jej dane na pewno zgadzają się z tym, co w va_list
 	const struct tuple * found_tuple = linda_memory->first_tuple + tuple_index;
 	const size_t info_string_length = strlen(found_tuple->tuple_content);
@@ -537,6 +575,10 @@ bool vlinda_input(int timeout, const char * match_string, va_list * v_init)
 	
 	//Usuń krotkę, przesuń pozostałe krotki do tyłu
 	memcpy(&linda_memory->first_tuple[tuple_index], &linda_memory->first_tuple[tuple_index + 1], (--linda_memory->tuple_count - tuple_index) * sizeof(struct tuple));
+	if (linda_logging)
+	{
+		syslog(6, "Removed tuple");
+	}
 	return true;
 }
 

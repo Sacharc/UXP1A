@@ -8,7 +8,7 @@
 
 #include "include/dynamic_va_list.h"
 
-static char noLogging = 0;
+extern bool linda_logging;
 
 static int parse_opt(int key, char *arg, struct argp_state *state)
 {
@@ -16,7 +16,7 @@ static int parse_opt(int key, char *arg, struct argp_state *state)
     {
         case 'n':
         {
-            noLogging = 1;
+            linda_logging = false;
             break;
         }
     }
@@ -54,7 +54,6 @@ int main(int argc, char **argv)
             };
     struct argp argp = {options, parse_opt, 0, 0};
     argp_parse(&argp, argc, argv, 0, 0, 0);
-
 
     int segment_id = linda_init();
 
