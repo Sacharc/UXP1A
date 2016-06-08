@@ -367,6 +367,7 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
                         start_int_position = 2;
                     }
 
+                    //Tutaj jest lipa bo czytalismy te inty jakby byly zserializowane, a trzeba je zamieniac na inty jakos
                     int match_string_int;
                     memcpy(&match_string_int, &current_match_string_token[start_int_position], sizeof(int));
 
