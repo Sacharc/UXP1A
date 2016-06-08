@@ -23,7 +23,7 @@ static int parse_opt(int key, char *arg, struct argp_state *state)
     return 0;
 }
 
-int input(char *line, size_t line_length, bool (*)(int, char*, va_list));
+int input(char *line, size_t line_length, bool (*)(int, const char*, va_list*));
 
 int output(char *line, size_t line_length);
 
@@ -55,7 +55,12 @@ int main(int argc, char **argv)
     struct argp argp = {options, parse_opt, 0, 0};
     argp_parse(&argp, argc, argv, 0, 0, 0);
 
-    int segment_id = linda_init();
+    bool success = linda_init();
+    if (!success)
+    {
+        printf("Could not initialize linda.\n");
+        return 1;
+    }
 
     char *raw_line = NULL;
     size_t length = 0;
@@ -115,7 +120,7 @@ int main(int argc, char **argv)
     }
 
     free(raw_line);
-    linda_end(segment_id);
+    linda_end();
 }
 
 
@@ -131,7 +136,7 @@ int main(int argc, char **argv)
 #define ERR_NO_TIMEOUT 10
 #define ERR_NOT_FOUND 11
 
-int input(char *line, size_t line_length, bool (*input_function)(int, char*, va_list))
+int input(char *line, size_t line_length, bool (*input_function)(int, const char*, va_list*))
 {
     char *match_string = strtok(NULL, " \t");
 
@@ -256,7 +261,7 @@ int input(char *line, size_t line_length, bool (*input_function)(int, char*, va_
     dynamic_va_start(&va_list_linda, input);
 
 
-    bool found = (*input_function)(timeout, match_string, va_list_linda._va_list);
+    bool found = (*input_function)(timeout, match_string, &va_list_linda._va_list);
     if(!found) {
         free_input_content(input, types);
         dynamic_va_end(&va_list_linda);
@@ -418,7 +423,7 @@ int output(char *line, size_t line_length)
     dynamic_va_list args;
     dynamic_va_start(&args, output);
 
-    vlinda_output(info_string, args._va_list);
+    vlinda_output(info_string, &args._va_list);
 
     dynamic_va_end(&args);
     return 0;
