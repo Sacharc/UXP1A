@@ -4,11 +4,10 @@
 #include "linda.h"
 #include <stdarg.h>
 #include <sys/shm.h>
-#include <errno.h>
+#include <assert.h>
 
 #define TUPLE_CONTENT_LENGTH 128
 #define TUPLE_COUNT 128
-#define MEMORY_KEY_ID 1001
 #define INFO_STRING_PARAM_NOT_RECOGNIZED "Info string parameter not recognized"
 
 struct tuple
@@ -126,12 +125,13 @@ bool linda_output(char * info_string, ...)
             default:
             {
                 perror(INFO_STRING_PARAM_NOT_RECOGNIZED);
-                break;
+                return false;
             }
         }
         if (input_tuple_length > TUPLE_CONTENT_LENGTH)
         {
-            return 0;
+            perror("Tuple content length exceeds max size.");
+            return false;
         }
         ++info_string_position;
     }
@@ -189,5 +189,84 @@ bool linda_output(char * info_string, ...)
 
     linda_end();
 
-    return 0;
+    return true;
+}
+
+char* strdup(const char* p)
+{
+    char* np = (char*)malloc(strlen(p)+1);
+    return np ? strcpy(np, p) : np;
+}
+
+char** str_split(char* a_str, const char a_delim)
+{
+    char** result    = 0;
+    size_t count     = 0;
+    char* tmp        = a_str;
+    char* last_comma = 0;
+    char delim[2];
+    delim[0] = a_delim;
+    delim[1] = 0;
+
+    /* Count how many elements will be extracted. */
+    while (*tmp)
+    {
+        if (a_delim == *tmp)
+        {
+            count++;
+            last_comma = tmp;
+        }
+        tmp++;
+    }
+
+    /* Add space for trailing token. */
+    count += last_comma < (a_str + strlen(a_str) - 1);
+
+    /* Add space for terminating null string so caller
+       knows where the list of returned strings ends. */
+    count++;
+
+    result = malloc(sizeof(char*) * count);
+
+    if (result)
+    {
+        size_t idx  = 0;
+        char* token = strtok(a_str, delim);
+
+        while (token)
+        {
+            assert(idx < count);
+            *(result + idx++) = strdup(token);
+            token = strtok(0, delim);
+        }
+        assert(idx == count - 1);
+        *(result + idx) = 0;
+    }
+
+    return result;
+}
+
+
+struct tuple readTuple(char *match_string)
+{
+    char** tokens = str_split(match_string, ',');
+    if (tokens)
+    {
+        int i;
+        for (i = 0; *(tokens + i); ++i)
+        {
+            //TODO implement switch // *(tokens + i);
+            free(*(tokens + i));
+        }
+        free(tokens);
+    }
+
+    //TODO implement this method
+}
+
+bool linda_input(int timeout, char* match_string, ...)
+{
+    readTuple(match_string);
+
+    //TODO implement this method
 }
