@@ -192,3 +192,19 @@ TEST(Functional_String_Test, eq_test_neg)
     EXPECT_FALSE(linda_input(1, "s==c", value));
     linda_end(seg_id);
 }
+
+TEST(Functional_String_Test, triple_output_test)
+{
+    int seg_id = linda_init();
+    for(int i = 0; i < 3; i++)
+        EXPECT_TRUE(linda_output("s", "triple_output_test"));
+
+    for(int i = 0; i < 3; i++)
+    {
+        char value[128];
+        EXPECT_TRUE(linda_input(1, "s", value));
+        EXPECT_EQ(strcmp("triple_output_test", value), 0);
+    }
+
+    linda_end(seg_id);
+}
