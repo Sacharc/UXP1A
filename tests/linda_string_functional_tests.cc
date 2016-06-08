@@ -1,154 +1,195 @@
 
 #include <gtest/gtest.h>
 #include "../include/linda.h"
+#include "../include/linda.c"
 
 TEST(Functional_String_Test, any_string)
 {
-    linda_init();
+    int seg_id = linda_init();
     EXPECT_TRUE(linda_output("s", "test"));
-    char* value;
-    EXPECT_TRUE(linda_input(1, "s", &value));
+    char value[128];
+    EXPECT_TRUE(linda_read(1, "s", value));
     EXPECT_EQ(strcmp("test", value), 0);
-    linda_end();
+
+    char value1[128];
+    EXPECT_TRUE(linda_input(1, "s", value1));
+    EXPECT_EQ(strcmp("test", value1), 0);
+    linda_end(seg_id);
 }
 
 TEST(Functional_String_Test, any_string_neg)
 {
-    linda_init();
-    char* value;
-    EXPECT_FALSE(linda_input(1, "s", &value));
-    linda_end();
+    int seg_id = linda_init();
+    char value[128];
+    EXPECT_FALSE(linda_read(1, "s", value));
+    EXPECT_FALSE(linda_input(1, "s", value));
+    linda_end(seg_id);
 }
 
 TEST(Functional_String_Test, any_string_neg1)
 {
-    linda_init();
+    int seg_id = linda_init();
     EXPECT_TRUE(linda_output("f", 0.0));
-    char* value;
-    EXPECT_FALSE(linda_input(1, "s", &value));
-    linda_end();
+    char value[128];
+    EXPECT_FALSE(linda_read(1, "s", value));
+    EXPECT_FALSE(linda_input(1, "s", value));
+    linda_end(seg_id);
 }
 
 TEST(Functional_String_Test, any_string_neg2)
 {
-    linda_init();
+    int seg_id = linda_init();
     EXPECT_TRUE(linda_output("i", 0));
-    char* value;
-    EXPECT_FALSE(linda_input(1, "s", &value));
-    linda_end();
+    char value[128];
+    EXPECT_FALSE(linda_read(1, "s", value));
+    EXPECT_FALSE(linda_input(1, "s", value));
+    linda_end(seg_id);
 }
 
 TEST(Functional_String_Test, less_test)
 {
-    linda_init();
+    int seg_id = linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
-    char* value;
-    EXPECT_TRUE(linda_input(1, "s<c", &value));
+    char value[128];
+    EXPECT_TRUE(linda_read(1, "s<c", value));
     EXPECT_EQ(strcmp(value, "b"), 0);
-    linda_end();
+
+    char value1[128];
+    EXPECT_TRUE(linda_input(1, "s<c", value1));
+    EXPECT_EQ(strcmp(value1, "b"), 0);
+    linda_end(seg_id);
 }
 
 TEST(Functional_String_Test, less_test_neg)
 {
-    linda_init();
+    int seg_id = linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
-    char* value;
-    EXPECT_FALSE(linda_input(1, "s<b", &value));
-    linda_end();
+    char value[128];
+    EXPECT_FALSE(linda_read(1, "s<b", value));
+    EXPECT_FALSE(linda_input(1, "s<b", value));
+    linda_end(seg_id);
 }
 
 TEST(Functional_String_Test, less_eq_test1)
 {
-    linda_init();
+    int seg_id = linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
-    char* value;
-    EXPECT_TRUE(linda_input(1, "s<=c", &value));
+    char value[128];
+    EXPECT_TRUE(linda_read(1, "s<=c", value));
     EXPECT_EQ(strcmp(value, "b"), 0);
-    linda_end();
+
+    char value1[128];
+    EXPECT_TRUE(linda_input(1, "s<=c", value1));
+    EXPECT_EQ(strcmp(value1, "b"), 0);
+    linda_end(seg_id);
 }
 
 TEST(Functional_String_Test, less_eq_test2)
 {
-    linda_init();
+    int seg_id = linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
-    char* value;
-    EXPECT_TRUE(linda_input(1, "s<=b", &value));
+    char value[128];
+    EXPECT_TRUE(linda_read(1, "s<=b", value));
     EXPECT_EQ(strcmp(value, "b"), 0);
-    linda_end();
+
+    char value1[128];
+    EXPECT_TRUE(linda_input(1, "s<=b", value1));
+    EXPECT_EQ(strcmp(value1, "b"), 0);
+    linda_end(seg_id);
 }
 
 TEST(Functional_String_Test, less_eq_test_neg)
 {
-    linda_init();
+    int seg_id = linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
-    char* value;
-    EXPECT_FALSE(linda_input(1, "s<=a", &value));
-    linda_end();
+    char value[128];
+    EXPECT_FALSE(linda_read(1, "s<=a", value));
+    EXPECT_FALSE(linda_input(1, "s<=a", value));
+    linda_end(seg_id);
 }
 
 TEST(Functional_String_Test, greater_test)
 {
-    linda_init();
+    int seg_id = linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
-    char* value;
-    EXPECT_TRUE(linda_input(1, "s>a", &value));
+    char value[128];
+    EXPECT_TRUE(linda_read(1, "s>a", value));
     EXPECT_EQ(strcmp(value, "b"), 0);
-    linda_end();
+
+    char value1[128];
+    EXPECT_TRUE(linda_input(1, "s>a", value1));
+    EXPECT_EQ(strcmp(value1, "b"), 0);
+    linda_end(seg_id);
 }
 
 TEST(Functional_String_Test, greater_test_neg)
 {
-    linda_init();
+    int seg_id = linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
-    char* value;
-    EXPECT_FALSE(linda_input(1, "s>c", &value));
-    linda_end();
+    char value[128];
+    EXPECT_FALSE(linda_read(1, "s>c", value));
+    EXPECT_FALSE(linda_input(1, "s>c", value));
+    linda_end(seg_id);
 }
 
 TEST(Functional_String_Test, greater_eq_test1)
 {
-    linda_init();
+    int seg_id = linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
-    char* value;
-    EXPECT_TRUE(linda_input(1, "s>=a", &value));
+    char value[128];
+    EXPECT_TRUE(linda_read(1, "s>=a", value));
     EXPECT_EQ(strcmp(value, "b"), 0);
-    linda_end();
+
+    char value1[128];
+    EXPECT_TRUE(linda_input(1, "s>=a", value1));
+    EXPECT_EQ(strcmp(value1, "b"), 0);
+    linda_end(seg_id);
 }
 
 TEST(Functional_String_Test, greater_eq_test2)
 {
-    linda_init();
+    int seg_id = linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
-    char* value;
-    EXPECT_TRUE(linda_input(1, "s>=b", &value));
+    char value[128];
+    EXPECT_TRUE(linda_read(1, "s>=b", value));
     EXPECT_EQ(strcmp(value, "b"), 0);
-    linda_end();
+
+    char value1[128];
+    EXPECT_TRUE(linda_input(1, "s>=b", value1));
+    EXPECT_EQ(strcmp(value1, "b"), 0);
+    linda_end(seg_id);
 }
 
 TEST(Functional_String_Test, greater_eq_test_neg)
 {
-    linda_init();
+    int seg_id = linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
-    char* value;
-    EXPECT_FALSE(linda_input(1, "s>=c", &value));
-    linda_end();
+    char value[128];
+    EXPECT_FALSE(linda_read(1, "s>=c", value));
+    EXPECT_FALSE(linda_input(1, "s>=c", value));
+    linda_end(seg_id);
 }
 
 TEST(Functional_String_Test, eq_test)
 {
-    linda_init();
+    int seg_id = linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
-    char* value;
-    EXPECT_TRUE(linda_input(1, "s=b", &value));
+    char value[128];
+    EXPECT_TRUE(linda_read(1, "s=b", value));
     EXPECT_EQ(strcmp(value, "b"), 0);
-    linda_end();
+
+    char value1[128];
+    EXPECT_TRUE(linda_input(1, "s=b", value1));
+    EXPECT_EQ(strcmp(value1, "b"), 0);
+    linda_end(seg_id);
 }
 
 TEST(Functional_String_Test, eq_test_neg)
 {
-    linda_init();
+    int seg_id = linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
-    char* value;
-    EXPECT_FALSE(linda_input(1, "s=c", &value));
-    linda_end();
+    char value[128];
+    EXPECT_FALSE(linda_read(1, "s=c", value));
+    EXPECT_FALSE(linda_input(1, "s=c", value));
+    linda_end(seg_id);
 }
