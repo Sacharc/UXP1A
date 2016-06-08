@@ -1,105 +1,193 @@
-//
-// Created by michto on 04.06.16.
-//
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "linda.h"
 #include <stdarg.h>
+#include <sys/shm.h>
+#include <errno.h>
 
-#define true 1
-#define false 0
+#define TUPLE_CONTENT_LENGTH 128
+#define TUPLE_COUNT 128
+#define MEMORY_KEY_ID 1001
+#define INFO_STRING_PARAM_NOT_RECOGNIZED "Info string parameter not recognized"
 
-typedef int bool;
-
-
-//TODO gdzie pakowac krotki ????
-struct mem {
-    char* tuples; //tablica charow bez poczatkowego inta
-    unsigned int tupleCount;
+struct tuple
+{
+    char tuple_content[TUPLE_CONTENT_LENGTH];
 };
-struct mem* shmemory;
 
+struct mem
+{
+    size_t tuple_count;
+    struct tuple first_tuple[TUPLE_COUNT];
+};
 
-void checkIfNotExceeded (size_t length) {
-    if(length >= TUPLE_SIZE){
-        perror("Too much arguments");
-        exit(0);
+//Zwraca rozmiar skopiowanych danych
+size_t int_to_tuple(int input, char * output)
+{
+    memcpy(output, &input, sizeof(input));
+    return sizeof(input);
+}
+
+size_t double_to_tuple(double input, char * output)
+{
+    memcpy(output, &input, sizeof(input));
+    return sizeof(input);
+}
+
+size_t string_to_tuple(const char * input, char * output)
+{
+    size_t length = strlen(input) + 1;
+    memcpy(output, input, length);
+    return length;
+}
+
+struct mem * linda_memory = NULL;
+
+// TODO? http://stackoverflow.com/questions/16423789/can-i-resize-linux-shared-memory-with-shmctl
+int linda_init()
+{
+    /* Allocate a shared memory segment.  */
+    //printf(stderr, "IPC_PRIVATE == %#lx\n", IPC_PRIVATE);
+    key_t key = ftok("~/UXP1A", 1); // z góry zadany id klucza naszego segemntu pozwala na obsluzenie wielu initow - 1 raz pamiec sie tworzy, potem tylko zwraca segemnt_id juz istniejacej pamieci
+    if (key == -1)
+    {
+        perror("key == -1");
+    }
+    int segment_id = shmget(key, sizeof(struct mem), IPC_CREAT | 0660);
+    if (segment_id == -1) // shmget niepowodzenie, mozliwe ze nie istnieje
+    {
+        perror("segment_id == -1");
+    }
+    /* Attach the shared memory segment.  */
+    linda_memory = (struct mem*) shmat (segment_id, NULL, 0);
+
+    /* Check number of currently attached processes. If we are the first process, we are obligated to initialize the memory */
+    struct shmid_ds shm_data;
+    if(shmctl(segment_id, IPC_STAT, &shm_data) == -1)
+    {
+        perror("shmctl(segment_id, IPC_STAT, &shm_data) == -1");
+    }
+
+    if (shm_data.shm_nattch == 1)
+    {
+        linda_memory->tuple_count = 0;
     }
 }
 
-
-void parseNumberToTuple (const void *data, char* tuple, int * position, bool isInt){
-    if (isInt == true){
-        checkIfNotExceeded(*position + sizeof (int));
-        memcpy(tuple + *position, data, sizeof (int));
-        *position = *position + sizeof (int);
+int linda_end()
+{
+    /* Detach the shared memory segment.  */
+    if(shmdt(linda_memory) != 0)
+    {
+        perror("shmdt(linda_memory) == -1");
     }
-    else {
-        checkIfNotExceeded(*position + sizeof (float));
-        memcpy(tuple + *position, data, sizeof (float));
-        *position = *position + sizeof (float);
+
+    /* Deallocate the shared memory segment.  */
+    if(shmctl(linda_memory, IPC_RMID, NULL) == -1)
+    {
+        perror("shmctl(linda_memory, IPC_RMID, NULL) == -1");
     }
 }
 
+bool linda_output(char * info_string, ...)
+{
 
-void parseStringToTuple (const void *data, char* tuple, int * position){
-    size_t size = strlen(data) + 1;
-    checkIfNotExceeded(*position + strlen(data) + 1);
-    memcpy(tuple + *position, data, strlen(data) + 1);
-    *position = *position + strlen(data) + 1;
-}
+    //TODO exctract method with validation
+    const size_t info_string_length = strlen(info_string);
 
+    size_t input_tuple_length = info_string_length + 1;
 
-int linda_output(char * infoString, ...) {
-    va_list vl;
-    int i;
-    char tuple[TUPLE_SIZE];
-    int position = 0;
+    va_list v_init;
+    va_start(v_init, info_string);
+    size_t info_string_position = 0;
+    while (info_string[info_string_position] != 0)
+    {
+        switch(info_string[info_string_position])
+        {
+            case 'i':
+            {
+                va_arg(v_init, int);
+                input_tuple_length += sizeof(int);
+                break;
+            }
+            case 'f':
+            {
+                va_arg(v_init, double); //va_arg nie przyjmuje float'a - korzystamy z double
+                input_tuple_length += sizeof(double);
+                break;
+            }
+            case 's':
+            {
+                char * c = va_arg(v_init, char *);
+                input_tuple_length += strlen(c) + 1;
+                break;
+            }
+            default:
+            {
+                perror(INFO_STRING_PARAM_NOT_RECOGNIZED);
+                break;
+            }
+        }
+        if (input_tuple_length > TUPLE_CONTENT_LENGTH)
+        {
+            return 0;
+        }
+        ++info_string_position;
+    }
+    va_end(v_init);
 
-    //infoString to tuple
-    checkIfNotExceeded(strlen(infoString) + 1);
-    memcpy(tuple, infoString, strlen(infoString) + 1); // + NULL
-    position = position + strlen(infoString) + 1;
+    //Powiększyć przestrzeń w linda_memory o kolejną krotkę (+ zwiększyć licznik)
+    //Zdobyć wskaźnik tuple * CurrentTuple na świeżo zaalokowaną krotkę
+    linda_init();
+
+    //3.
+    size_t current_tuple_position = 0;
+    struct tuple * current_tuple = linda_memory->first_tuple + linda_memory->tuple_count;
+    linda_memory->tuple_count += 1;
+
+    //Wrzucamy InfoString do pamięci
+    memcpy(current_tuple->tuple_content + current_tuple_position, info_string_length, info_string_length + 1);
+    current_tuple_position += info_string_length + 1;
+
+    //Wrzucamy dane do pamięci
 
     //data to tuple
-    va_start( vl, infoString);
-    for( i = 0; infoString[i] != '\0'; ++i ) {
-
-        union types {
-            int     i;
-            float   f;
-            char   *s;
-        } types;
-
-        switch( infoString[i] ) {   // Type to expect.
+    va_list vl;
+    va_start(vl, info_string);
+    info_string_position = 0;
+    while(info_string[info_string_position] != 0)
+    {
+        switch(info_string[info_string_position])
+        {
             case 'i':
-                types.i = va_arg( vl, int );
-                parseNumberToTuple(&types.i, tuple, &position, true);
+            {
+                current_tuple_position += int_to_tuple((int) va_arg(vl, int), current_tuple->tuple_content + current_tuple_position);
                 break;
-
+            }
             case 'f':
-                types.f = va_arg( vl, double );
-                parseNumberToTuple(&types.f, tuple, &position, false);
+            {
+                current_tuple_position += double_to_tuple((double) va_arg(vl, double), current_tuple->tuple_content + current_tuple_position);
                 break;
-
+            }
             case 's':
-                types.s = va_arg( vl, char * );
-                parseStringToTuple(types.s, tuple, &position);
+            {
+                current_tuple_position += string_to_tuple((char *) va_arg(vl, char *), current_tuple->tuple_content + current_tuple_position);
                 break;
-
+            }
             default:
-                perror("Not recognized");
+            {
+                perror(INFO_STRING_PARAM_NOT_RECOGNIZED);
                 break;
+            }
         }
-    }
-    va_end( vl );
 
-    //sposob 1
-//    shmemory->tuples = (char *) realloc(shmemory->tuples, shmemory->tupleCount * TUPLE_SIZE);
-//    memcpy(shmemory->tuples + shmemory->tupleCount * TUPLE_SIZE, tuple, TUPLE_SIZE);
-//    shmemory->tupleCount++;
+        ++info_string_position;
+    }
+    va_end(vl);
+
+
+    linda_end();
 
     return 0;
 }
