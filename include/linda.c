@@ -13,9 +13,16 @@
 
 bool linda_logging = true;
 
+/*
+* Pointer to mem structure
+* to assigned to allocated shared memory
+*/
 struct mem * linda_memory = NULL;
-int linda_segment_id = 0;
 
+/*
+* Id segment of shared memory
+*/
+int linda_segment_id = 0;
 
 bool linda_init()
 {
@@ -59,7 +66,7 @@ bool linda_init()
 		return false;
 	}
 
-	/* Check number of currently attached processes. If we are the first process, we are obligated to initialize the memory */
+	//Check number of currently attached processes. If we are the first process, we are obligated to initialize the memory
 	struct shmid_ds shm_data;
 	if(shmctl(linda_segment_id, IPC_STAT, &shm_data) == -1)
 	{
@@ -72,6 +79,7 @@ bool linda_init()
 		return false;
 	}
 
+  //Init tuple_count, if it's first process
 	if(shm_data.shm_nattch == 1)
 	{
 		linda_memory->tuple_count = 0;
@@ -82,7 +90,7 @@ bool linda_init()
 
 void linda_end()
 {
-	/* Detach the shared memory segment.  */
+	// Detach the shared memory segment. 
 	if(shmdt(linda_memory) == -1)
 	{
 		printf("IPC error shmdt(). Cannot detach memory.");
@@ -92,7 +100,7 @@ void linda_end()
 		}
 	}
 
-	/* Deallocate the shared memory segment.  */
+	// Deallocate the shared memory segment.
 	if(shmctl(linda_segment_id, IPC_RMID, NULL) == -1)
 	{
 		printf("IPC error shmctl(). Cannot deallocate shared memory.");
@@ -104,19 +112,27 @@ void linda_end()
 	closelog();
 }
 
-//OUTPUT Functions
+/*
+* Bytes of input integer copied to char buffer
+*/
 size_t int_to_tuple(int input, char * output)
 {
 	memcpy(output, &input, sizeof(input));
 	return sizeof(input);
 }
 
+/*
+* Bytes of input double copied to char buffer
+*/
 size_t double_to_tuple(double input, char * output)
 {
 	memcpy(output, &input, sizeof(input));
 	return sizeof(input);
 }
 
+/*
+* Bytes of input char* copied to char buffer
+*/
 size_t string_to_tuple(const char * input, char * output)
 {
 	size_t length = strlen(input) + 1;
@@ -149,7 +165,7 @@ bool vlinda_output(const char * info_string, va_list * v_init)
 	const size_t info_string_length = strlen(info_string);
 	size_t current_tuple_length = info_string_length + 1;
 	
-	//Kopiujemy listę argumentów do sprawdzenia (pierwsza pętla) i wyciągania danych do krotki (druga pętla)
+	//Copy for first iteration to check and validate info_string 
 	va_list va_check, va_read;
 	va_copy(va_check, *v_init);
 	
@@ -195,16 +211,16 @@ bool vlinda_output(const char * info_string, va_list * v_init)
 	va_end(va_check);
 
 
-	//Bierzemy wskaźnik na krotkę, przesuwamy 
+	//Pointer at tuple, incremented
 	size_t current_tuple_position = 0;
 	struct tuple * current_tuple = linda_memory->first_tuple + linda_memory->tuple_count;
 	linda_memory->tuple_count++;
 
-	//Wrzucamy info_string do pamięci
+	//Info_string to memory
 	memcpy(current_tuple->tuple_content, info_string, info_string_length + 1);
 	current_tuple_position += info_string_length + 1;
 
-	//Wrzucamy dane do pamięci
+	//Data from va_list to memory
 	va_copy(va_read, *v_init);
 	
 	info_string_position = 0;
@@ -233,7 +249,6 @@ bool vlinda_output(const char * info_string, va_list * v_init)
 				break;
 			}
 		}
-
 		++info_string_position;
 	}
 	
@@ -245,8 +260,14 @@ bool vlinda_output(const char * info_string, va_list * v_init)
 	return true;
 }
 
+ /**
+ * Compares string using operator.
 
-//INPUT FUNCTIONS
+ * @param operator_ operator
+ * @param string_a first string to compare
+ * @param string_b second string to compare
+ * @return true when condition fulfilled, otherwise returns false
+ */
 bool compare_string(const char * operator_, const char * string_a, const char * string_b)
 {
 	if(strcmp(operator_, "==") == 0)
@@ -264,6 +285,14 @@ bool compare_string(const char * operator_, const char * string_a, const char * 
 	return false;
 }
 
+ /**
+ * Compares int using operator.
+
+ * @param operator_ operator
+ * @param a first int to compare
+ * @param b second itn to compare
+ * @return true when condition fulfilled, otherwise returns false
+ */
 bool compare_int(const char * operator_, int a, int b)
 {
 	if(strcmp(operator_, "==") == 0)
@@ -281,6 +310,14 @@ bool compare_int(const char * operator_, int a, int b)
 	return false;
 }
 
+ /**
+ * Compares int using operator.
+
+ * @param operator_ operator
+ * @param a first double to compare
+ * @param b second double to compare
+ * @return true when condition fulfilled, otherwise returns false
+ */
 bool compare_double(const char * operator_, double a, double b)
 {
 	if(strcmp(operator_, "==") == 0)
@@ -301,11 +338,13 @@ bool compare_double(const char * operator_, double a, double b)
 	return false;
 }
 
-/**
-	Sprawdza, czy info_string i match_string definiują taką samą krotkę
-	
-	Testowane, działa
-*/
+ /**
+ * Checks if info_string and match_string define the same types in tuple.
+ *
+ * @param info_string the info string
+ * @param match_string the match string
+ * @return true when types equal, otherwise false
+ */
 bool info_string_match_string_equals(const char * info_string, const char * match_string)
 {
 	size_t info_string_position = 0;
@@ -313,18 +352,18 @@ bool info_string_match_string_equals(const char * info_string, const char * matc
 
 	for(;;)
 	{
-		//Jeśli znaki nie są identyczne
+		//Characters are different.
 		if(info_string[info_string_position] != match_string[match_string_position])
 			return false;
 
-		//Jeśli oba się kończą (to w zasadzie ma sens tylko dla pierwszego znaku)
+		//If info_string ends (it's basically only makes sense for the first character).
 		if(info_string[info_string_position] == 0)
 			return true;
 
-		//Przesuwamy iterator info_string o jeden znak do przodu
+		//We are moving info_string iterator.
 		info_string_position++;
 
-		//Przesuwamy iterator match_string na znak po przecinku (albo null)
+		//We are moving match_string to first character after null or comma.
 		for(;;)
 		{
 			if(match_string[match_string_position] == ',' || match_string[match_string_position] == 0)
@@ -332,18 +371,20 @@ bool info_string_match_string_equals(const char * info_string, const char * matc
 			match_string_position++;
 		}
 
-		//Jeśli match-string się skończył - sprawdzamy czy info_string też się skończył
 		if(match_string[match_string_position] == 0)
 			return info_string[info_string_position] == 0;
 
-		//Nie - jesteśmy na przecinku, przesuwamy się za niego
+		//Match_string_position points at comma, so we are incrementing match_string_position.
 		match_string_position++;
 	}
 }
 
 /**
-	Z podanego match_string wyciąga operator i umieszcza go w output_operator. output_operator musi mieć minimum 3 znaki.
-	Zwraca wskaźnik na pierwszy znak za operatorem
+* From selected match_string gets operator and puts in operator_output. Output_operator must have at least 3 characters.
+*
+* @param output_operator the output operator
+* @param match_string the match string
+* @return pointer at first character after operator
 */
 const char * match_string_extract_operator(const char * match_string, char * output_operator)
 {
@@ -362,41 +403,42 @@ const char * match_string_extract_operator(const char * match_string, char * out
 }
 
 /**
-	Sprawdza, czy podana krotka pasuje do podanego wzorca
+* Checks if tuple match to match_string pattern.
+*
+* @param tuple_to_match the tuple to match
+* @param match_string the match string
+* @return true if matches
 */
 bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * match_string)
 {
-	//Sprawdzamy, czy w ogóle typy są zgodne
+	//We check if types match.
 	if(!info_string_match_string_equals(tuple_to_match->tuple_content, match_string))
 		return false;
 
 
 	size_t tuple_to_match_position = strlen(&tuple_to_match->tuple_content[0]) + 1; //pomijamy info_string
 
-	//Właściwe filtry
-	//current_match_string_token_start wskazuje na pierwszy znak filtra
-	//current_match_string_token_end wskazuje na ostatni znak filtra
+	//Filters
+	//current_match_string_token_start points at first filter character
+	//current_match_string_token_end points at last filter character
 
 	const char * current_match_string_token_start = match_string;
 	for(;;)
 	{
-		//Wyciągamy tekst od obecnej pozycji do nulla albo przecinka.
-		//Pozycję zwraca nam strchr
+		//We gets text from current position to null or comma.
 		char current_match_string_token[TUPLE_CONTENT_LENGTH];
 
-		//Szukamy ',' albo końca tekstu
+		//We are looking for ',' or end of string.
 		const char * current_match_string_token_end = strchr(current_match_string_token_start, ',');
 		if(current_match_string_token_end == NULL) //Przecinka nie ma, jest koniec tekstu.
 			current_match_string_token_end = current_match_string_token_start + strlen(current_match_string_token_start);
 
-		//Długość od start do end
+		//Length from start to end.
 		const size_t current_match_string_token_length = current_match_string_token_end - current_match_string_token_start;
 
-		//Wykopiowujemy do dedykowanego bufora
 		strncpy(current_match_string_token, current_match_string_token_start, current_match_string_token_length);
 		current_match_string_token[current_match_string_token_length] = 0;
 
-		//Do kolejnego obiegu pętli przesuwamy start za end. current_match_string_token_start może być nieprawidłowy (wskazywać za końcem), ale to jeszcze sprawdzi nam check na dole
 		current_match_string_token_start = current_match_string_token_end + 1;
 		
 		
@@ -431,7 +473,6 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 		{
 			char operator_[3];
 			const char * match_string_post_operator = match_string_extract_operator(current_match_string_token, operator_);
-			//printf("Iteracja tuple_match_match_string: `%c` `%s` `%s`\n", current_match_string_token[0], operator, match_string_post_operator);
 			
 			switch(current_match_string_token[0])
 			{
@@ -481,7 +522,7 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 			}
 		}
 
-		//Czy to koniec napisu? Jeśli wcześniej nie wyszliśmy - zwracamy true
+		//Is it the end of string?
 		if(*current_match_string_token_end == 0)
 			return true;
 	}
@@ -529,7 +570,7 @@ bool vlinda_in_generic(bool to_remove, int timeout, const char * match_string, v
 		return false;
 	}
 
-	//Otrzymaliśmy krotkę z extract_tuple_from_shmem, więc jej dane na pewno zgadzają się z tym, co w va_list
+	//Tuple is returned by extract_tuple_from_shmem, so its validate with va_list arguments.
 	const struct tuple *found_tuple = linda_memory->first_tuple + tuple_index;
 	const size_t info_string_length = strlen(found_tuple->tuple_content);
 
@@ -577,7 +618,7 @@ bool vlinda_in_generic(bool to_remove, int timeout, const char * match_string, v
 
 	if (to_remove)
 	{
-		//Usuń krotkę, przesuń pozostałe krotki do tyłu
+		//Delete tuple by replacing it and decrementing tuple_count.
 		memcpy(&linda_memory->first_tuple[tuple_index], &linda_memory->first_tuple[tuple_index + 1],
 			   (--linda_memory->tuple_count - tuple_index) * sizeof(struct tuple));
 		if (linda_logging)
