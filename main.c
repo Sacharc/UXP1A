@@ -87,7 +87,6 @@ int main(int argc, char **argv)
         char *instruction = strtok(line, "  \t");
         if (strcmp(instruction, "OUTPUT") == 0)
         {
-//            linda_output("isf", 777, "testowe", 3.14);
             status = output(line, line_length);
             if (status)
             {
@@ -96,8 +95,7 @@ int main(int argc, char **argv)
         }
         else if (strcmp(instruction, "INPUT") == 0)
         {
-//            status = input(line, line_length, &vlinda_input);
-            status = input(line, line_length, NULL);
+            status = input(line, line_length, &vlinda_input);
             if (status)
             {
                 print_error_message(status);
@@ -105,8 +103,7 @@ int main(int argc, char **argv)
         }
         else if (strcmp(instruction, "READ") == 0)
         {
-//            status = input(line, line_length, &vlinda_read);
-            status = input(line, line_length, NULL);
+            status = input(line, line_length, &vlinda_read);
             if (status)
             {
                 print_error_message(status);
@@ -193,8 +190,8 @@ int input(char *line, size_t line_length, bool (*input_function)(int, char*, va_
     strcpy(match_string_copy, match_string);
 
     char *type_string = strtok(match_string_copy, ",");
-    int error;
 
+    int error;
     while (1)
     {
         switch (type_string[0])
@@ -260,10 +257,12 @@ int input(char *line, size_t line_length, bool (*input_function)(int, char*, va_
     dynamic_va_start(&va_list_linda, input);
 
 
-//    bool error = (*input_function)(timeout, match_string, va_list_linda._va_list);
-//    if(error) {
-//        return ERR_NOT_FOUND;
-//    }
+    bool found = (*input_function)(timeout, match_string, va_list_linda._va_list);
+    if(!found) {
+        free_input_content(input, types);
+        dynamic_va_end(&va_list_linda);
+        return ERR_NOT_FOUND;
+    }
 
     // Build format string for vprintf
 
@@ -419,8 +418,6 @@ int output(char *line, size_t line_length)
     }
     dynamic_va_list args;
     dynamic_va_start(&args, output);
-
-
 
     vlinda_output(info_string, args._va_list);
 

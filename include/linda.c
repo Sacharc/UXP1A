@@ -468,6 +468,17 @@ int extract_tuple_from_shmem(const char * match_string)
 
 bool linda_input(int timeout, char* match_string, ...)
 {
+    va_list vl;
+    va_start(vl, match_string);
+
+    bool ret = vlinda_input(timeout, match_string, vl);
+
+    va_end(vl);
+    return ret;
+}
+
+bool vlinda_input(int timeout, char* match_string, va_list vl)
+{
     int tuple_index = extract_tuple_from_shmem(match_string);
 
     if (tuple_index == -1)
@@ -482,9 +493,6 @@ bool linda_input(int timeout, char* match_string, ...)
 
     size_t info_string_position = 0;
     size_t tuple_position = info_string_length + 1;
-
-    va_list vl;
-    va_start(vl, match_string);
 
     //Memcpy for arguments in va_list
     while(found_tuple->tuple_content[info_string_position] != NULL)
@@ -518,8 +526,6 @@ bool linda_input(int timeout, char* match_string, ...)
         }
         ++info_string_position;
     }
-    va_end(vl);
-
 
     /*Delete this tuple by replacing it and decrement
     Each tuple goes to its index-1, last index is not modify*/
@@ -537,5 +543,9 @@ bool linda_input(int timeout, char* match_string, ...)
 
     //Kopiuje wszystkie krotki za wyciąganą o jedno miejsce do tyłu. Zmniejsza licznik krotek
     memcpy(&linda_memory->first_tuple[tuple_index], &linda_memory->first_tuple[tuple_index + 1], (--linda_memory->tuple_count - tuple_index) * sizeof(struct tuple));
+}
 
+bool vlinda_read(int timeout, char* match_string, va_list vl)
+{
+    return false;
 }
