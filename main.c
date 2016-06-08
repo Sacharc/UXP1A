@@ -219,10 +219,10 @@ int input(char *line, size_t line_length, bool (*input_function)(int, char*, va_
                     return ERR_WRONG_MATCH_STRING;
                 }
                 strcat(types, "f");
-                input = (char *) realloc(input, offset + sizeof(float *));
-                float *floating_point = (float *) malloc(sizeof(float));
-                *((float **) (input + offset)) = floating_point;
-                offset += sizeof(float *);
+                input = (char *) realloc(input, offset + sizeof(double *));
+                double *floating_point = (double *) malloc(sizeof(double));
+                *((double **) (input + offset)) = floating_point;
+                offset += sizeof(double *);
                 break;
             }
             case 's':
@@ -295,7 +295,7 @@ int input(char *line, size_t line_length, bool (*input_function)(int, char*, va_
                 break;
             case 'f':
                 output = (char *) realloc(output, offset + VLIST_CHUNK_SIZE);
-                *((float *) (output + offset)) = **((float **) (input + offset));
+                *((double *) (output + offset)) = **((double **) (input + offset));
                 offset += VLIST_CHUNK_SIZE;
                 break;
             case 's':
@@ -391,13 +391,13 @@ int output(char *line, size_t line_length)
                 }
 
                 char *end;
-                float floating_point = strtof(variable, &end);
+                double floating_point = strtof(variable, &end);
                 if (*end != '\0')
                 {
                     free(output);
                     return ERR_FLOAT_PARSE;
                 }
-                *(float *) current_place = floating_point;
+                *(double *) current_place = floating_point;
                 current_place += VLIST_CHUNK_SIZE;
                 break;
             }
@@ -688,8 +688,8 @@ void free_input_content(char *input, char *types)
                 current_place += sizeof(int *);
                 break;
             case 'f':
-                free(*((float **) current_place));
-                current_place += sizeof(float *);
+                free(*((double **) current_place));
+                current_place += sizeof(double *);
                 break;
             case 's':
                 free(*((char **) current_place));
