@@ -23,11 +23,9 @@ static int parse_opt(int key, char *arg, struct argp_state *state)
     return 0;
 }
 
-int input(char *line, size_t line_length);
+int input(char *line, size_t line_length, int (*)(char*, va_list));
 
 int output(char *line, size_t line_length);
-
-int read();
 
 int check_integer_match_string(char *);
 
@@ -97,14 +95,20 @@ int main(int argc, char **argv)
             }
         } else if (strcmp(instruction, "INPUT") == 0)
         {
-            status = input(line, line_length);
+//            status = input(line, line_length, &vlinda_input);
+            status = input(line, line_length, NULL);
             if (status)
             {
                 print_error_message(status);
             }
         } else if (strcmp(instruction, "READ") == 0)
         {
-            read();
+//            status = input(line, line_length, &vlinda_read);
+            status = input(line, line_length, NULL);
+            if (status)
+            {
+                print_error_message(status);
+            }
         } else
         {
             printf("Instruction not recognized\n");
@@ -128,7 +132,7 @@ int main(int argc, char **argv)
 #define ERR_NO_TIMEOUT 10
 #define ERR_NOT_FOUND 11
 
-int input(char *line, size_t line_length)
+int input(char *line, size_t line_length, int (*input_function)(char*, va_list))
 {
     char *match_string = strtok(NULL, " \t");
 
@@ -254,7 +258,7 @@ int input(char *line, size_t line_length)
     // For testing purpose
     vscanf("%i %s %f", va_list_linda._va_list);
 
-//    int error = vlinda_input(timeout, match_string, va_list_linda._va_list);
+//    int error = (*input_function)(timeout, match_string, va_list_linda._va_list);
 //    if(error) {
 //        return ERR_NOT_FOUND;
 //    }
@@ -462,11 +466,6 @@ void print_error_message(int status)
     }
 }
 
-int read()
-{
-
-}
-
 char *get_word(char *string)
 {
     size_t length = strlen(string);
@@ -498,7 +497,6 @@ char *get_word(char *string)
     }
     return word_start;
 }
-
 
 char *get_words_inside_quotes(char *string)
 {
