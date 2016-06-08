@@ -246,22 +246,76 @@ char** str_split(char* a_str, const char a_delim)
     return result;
 }
 
-
-struct tuple readTuple(char *match_string)
-{
-    char** tokens = str_split(match_string, ',');
-    if (tokens)
+/**
+ * Checks if match string and info string match. Method doesn't check conditions, just checks types.
+ *
+ */
+bool match_string_and_info_string_match(char *const *tokens, const char *tuple_content_read) {
+    size_t tuple_content_iterator = 0;
+    for (; tuple_content_read[tuple_content_iterator] != 0; ++tuple_content_iterator)
     {
-        int i;
-        for (i = 0; *(tokens + i); ++i)
+
+        if (tuple_content_read[tuple_content_iterator] != *(tokens + tuple_content_iterator))
         {
-            //TODO implement switch // *(tokens + i);
-            free(*(tokens + i));
+            //match string and tuple info string doesn't match
+            return false;
         }
-        free(tokens);
     }
 
+    if (*(tokens + tuple_content_iterator) != '\0')
+    {
+        //match_string is longer than info string
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Checks if tuple contains values from match string.
+ */
+bool tuple_values_contain_match_string_values(char *const *match_string_tokens, const char *tuple_content_read)
+{
     //TODO implement this method
+}
+
+void free_match_string_tokens_memory(char **match_string_tokens) {
+    if (match_string_tokens)
+    {
+        for (size_t i = 0; *(match_string_tokens + i); ++i)
+        {
+            free(*(match_string_tokens + i));
+        }
+        free(match_string_tokens);
+    }
+}
+
+/**
+ * Reads the tuple from shared memory.
+ *
+ * @param  match_string the pointer to match_string
+ * @return tuple number, or -1 if fails.
+ */
+int readTuple(char *match_string)
+{
+    char** match_string_toneks = str_split(match_string, ',');
+    if (match_string_toneks)
+    {
+        for (size_t tuple_iterator; tuple_iterator < TUPLE_COUNT; ++tuple_iterator)
+        {
+            struct tuple tuple_read = linda_memory->first_tuple[tuple_iterator];
+            if (match_string_and_info_string_match(match_string_toneks, tuple_read.tuple_content)
+                    && tuple_values_contain_match_string_values(match_string_toneks, tuple_read.tuple_content))
+            {
+                return tuple_iterator;
+            }
+        }
+
+        free_match_string_tokens_memory(match_string_toneks);
+        return -1;
+    }
+    return -1;
+
 }
 
 bool linda_input(int timeout, char* match_string, ...)
