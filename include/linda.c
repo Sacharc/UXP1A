@@ -320,7 +320,70 @@ int readTuple(char *match_string)
 
 bool linda_input(int timeout, char* match_string, ...)
 {
-    readTuple(match_string);
+    int tuple_index = readTuple(match_string);
+    if (tuple_index == -1)
+    {
+        perror("Matched tuple not found");
+    }
 
-    //TODO implement this method
+    struct tuple * found_tuple = linda_memory->first_tuple + tuple_index;
+    size_t  info_string_length = strlen(found_tuple->tuple_content) + 1;
+
+    char * info_string;
+    memcpy(info_string, found_tuple->tuple_content, info_string_length);
+
+    va_list vl;
+    va_start(vl, info_string);
+    size_t info_string_position = 0;
+    size_t found_tuple_position = info_string_length;
+
+    //Memcpy for arguments in va_list
+    while(info_string[info_string_position] != 0)
+    {
+        switch(info_string[info_string_position])
+        {
+            case 'i':
+            {
+                memcpy(va_arg(vl, int *), found_tuple->tuple_content + found_tuple_position, sizeof(int));
+                found_tuple_position += sizeof(int);
+                break;
+            }
+            case 'f':
+            {
+                memcpy(va_arg(vl, double *), found_tuple->tuple_content + found_tuple_position, sizeof(double));
+                found_tuple_position += sizeof(double);
+                break;
+            }
+            case 's':
+            {
+                size_t string_length = strlen(found_tuple->tuple_content + found_tuple_position);
+                memcpy(va_arg(vl, char *), found_tuple->tuple_content + found_tuple_position, string_length);
+                found_tuple_position += string_length;
+                break;
+            }
+            default:
+            {
+                perror(INFO_STRING_PARAM_NOT_RECOGNIZED);
+                break;
+            }
+        }
+        ++info_string_position;
+    }
+    va_end(vl);
+
+
+    /*Delete this tuple by replacing it and decrement
+    Each tuple goes to its index-1, last index is not modify*/
+
+    //Replace tuple index by decr by 1
+    while (tuple_index < linda_memory->tuple_count - 1)
+    {
+        memcpy(linda_memory->first_tuple + tuple_index, linda_memory->first_tuple + tuple_index + 1, TUPLE_COUNT);
+        ++tuple_index;
+    }
+
+    //Last index to NULL
+    memset(linda_memory->first_tuple + tuple_index, 0, sizeof linda_memory->first_tuple + tuple_index);
+    --linda_memory->tuple_count;
+
 }
