@@ -9,7 +9,15 @@
 #define TUPLE_CONTENT_LENGTH 128
 #define TUPLE_COUNT 128
 #define INFO_STRING_PARAM_NOT_RECOGNIZED "Info string parameter not recognized"
+#define OPERATOR_NOT_REGOGNIZED "Operator not recognized"
 #define FTOK_PATH "/tmp"
+#define OPERATOR_FIRST_CHARACTER_INDEX 1
+#define OPERATOR_SECOND_CHARACTER_INDEX 2
+#define OPERATOR_STRING_LENGTH_INDEX 2
+#define FIRST_CHARACTER_TO_COMPARE_INDEX 3
+#define VALUE_TYPE_INDEX 0
+#define IS_INT 0
+#define IS_FLOAT 1
 
 struct tuple
 {
@@ -43,6 +51,7 @@ size_t string_to_tuple(const char * input, char * output)
 }
 
 struct mem * linda_memory = NULL;
+
 
 // TODO? http://stackoverflow.com/questions/16423789/can-i-resize-linux-shared-memory-with-shmctl
 //Return segment_id if operation success, else return -1
@@ -249,8 +258,9 @@ char** str_split(char* a_str, const char a_delim)
 /**
  * Checks if match string and info string match. Method doesn't check conditions, just checks types.
  *
+ * @return info string position end position if correct, otherwise -1
  */
-bool match_string_and_info_string_match(char *const *tokens, const char *tuple_content_read) {
+size_t match_string_and_info_string_match(char *const *tokens, const char *tuple_content_read) {
     size_t tuple_content_iterator = 0;
     for (; tuple_content_read[tuple_content_iterator] != 0; ++tuple_content_iterator)
     {
@@ -258,36 +268,184 @@ bool match_string_and_info_string_match(char *const *tokens, const char *tuple_c
         if (tuple_content_read[tuple_content_iterator] != *(tokens + tuple_content_iterator))
         {
             //match string and tuple info string doesn't match
-            return false;
+            return -1;
         }
     }
 
     if (*(tokens + tuple_content_iterator) != '\0')
     {
         //match_string is longer than info string
+        return -1;
+    }
+
+    return tuple_content_iterator;
+}
+
+bool compare_string(char * operator, int string_comparison)
+{
+    if (strcmp(operator, "=="))
+    {
+        if (string_comparison != 0)
+        {
+            return false;
+        }
+    }
+    else if (strcmp(operator, ">="))
+    {
+        if (string_comparison > 0) //TODO check if correct operator
+        {
+            return false;
+        }
+    }
+    else if (strcmp(operator, "<="))
+    {
+        if (string_comparison < 0) //TODO check if correct operator
+        {
+            return false;
+        }
+    }
+    else if (strcmp(operator[0], ">"))
+    {
+        if (string_comparison > 0) //TODO check if correct operator
+        {
+            return false;
+        }
+    }
+    else if (strcmp(operator[0], "<"))
+    {
+        if (string_comparison < 0) //TODO check if correct operator
+        {
+            return false;
+        }
+    }
+    else
+    {
+        perror("Operator comparison error");
+        return false;
+    }
+    return true;
+}
+
+
+bool compare_number(char *operator, char i, char character_from_tuple, int number_type)
+{
+    if (strcmp(operator, "=="))
+    {
+        if (IS_FLOAT == number_type || i != character_from_tuple)
+        {
+            return false;
+        }
+    }
+    else if (strcmp(operator, ">="))
+    {
+        if (i < character_from_tuple)
+        {
+            return false;
+        }
+    }
+    else if (strcmp(operator, "<="))
+    {
+        if (i > character_from_tuple)
+        {
+            return false;
+        }
+    }
+    else if (strcmp(operator[0], ">"))
+    {
+        if (i <= character_from_tuple)
+        {
+            return false;
+        }
+    }
+    else if (strcmp(operator[0], "<"))
+    {
+        if (i >= character_from_tuple)
+        {
+            return false;
+        }
+    }
+    else
+    {
+        perror("Operator comparison error");
         return false;
     }
 
-    return true;
 }
 
 /**
  * Checks if tuple contains values from match string.
  */
-bool tuple_values_contain_match_string_values(char *const *match_string_tokens, const char *tuple_content_read)
+bool tuple_values_contain_match_string_values(char *const *match_string_tokens, const char *tuple_content_read,
+                                              size_t info_string_end_position)
 {
-    //TODO implement this method
+    size_t offset = info_string_end_position + 1;
+    for (size_t i = 0; *(match_string_tokens + i); ++i)
+    {
+        char* token = *(match_string_tokens + i);
+        char operator[OPERATOR_STRING_LENGTH_INDEX];
+        operator[0] = token[OPERATOR_FIRST_CHARACTER_INDEX];
+        operator[1] = token[OPERATOR_SECOND_CHARACTER_INDEX];
+
+
+        switch (token[VALUE_TYPE_INDEX])
+        {
+            case 's':
+            {
+
+                char * string_from_tuple;
+                size_t string_size = strlen(tuple_content_read);
+                memcpy (string_from_tuple, tuple_content_read, string_size);
+
+                char * string_from_match_string;
+                size_t string_from_match_string_size = strlen(string_from_match_string);
+                memcpy (string_from_match_string, token +
+                                           VALUE_TYPE_INDEX, string_from_match_string_size);
+                int string_comparison = strcmp(string_from_tuple, string_from_match_string);
+
+                free(string_from_tuple);
+                free(string_from_match_string);
+
+                if (!compare_string(operator, string_comparison))
+                {
+                    return false;
+                }
+                break;
+            }
+            case 'i':
+            {
+                if (!compare_number(operator, token[FIRST_CHARACTER_TO_COMPARE_INDEX], tuple_content_read[offset], IS_INT))
+                {
+                    return false;
+                }
+
+                ++offset;
+            }
+            case 'f':
+            {
+                if (!compare_number(operator, token[FIRST_CHARACTER_TO_COMPARE_INDEX], tuple_content_read[offset], IS_FLOAT))
+                {
+                    return false;
+                }
+            }
+            default:
+            {
+                perror(OPERATOR_NOT_REGOGNIZED);
+                return false;
+            }
+
+        }
+    }
+
+    return true;
 }
 
-void free_match_string_tokens_memory(char **match_string_tokens) {
-    if (match_string_tokens)
+void free_match_string_tokens_memory(char **match_string_tokens)
+{
+    for (size_t i = 0; *(match_string_tokens + i); ++i)
     {
-        for (size_t i = 0; *(match_string_tokens + i); ++i)
-        {
-            free(*(match_string_tokens + i));
-        }
-        free(match_string_tokens);
+        free(*(match_string_tokens + i));
     }
+    free(match_string_tokens);
 }
 
 /**
@@ -304,8 +462,11 @@ int readTuple(char *match_string)
         for (size_t tuple_iterator; tuple_iterator < TUPLE_COUNT; ++tuple_iterator)
         {
             struct tuple tuple_read = linda_memory->first_tuple[tuple_iterator];
-            if (match_string_and_info_string_match(match_string_toneks, tuple_read.tuple_content)
-                    && tuple_values_contain_match_string_values(match_string_toneks, tuple_read.tuple_content))
+            size_t info_string_end_position =
+                    match_string_and_info_string_match(match_string_toneks, tuple_read.tuple_content);
+
+            if (info_string_end_position != -1
+                 && tuple_values_contain_match_string_values(match_string_toneks, tuple_read.tuple_content, info_string_end_position))
             {
                 return tuple_iterator;
             }
