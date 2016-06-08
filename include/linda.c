@@ -16,6 +16,7 @@ bool linda_logging = true;
 struct mem * linda_memory = NULL;
 int linda_segment_id = 0;
 
+
 bool linda_init()
 {
 	//Create virtual memory key
@@ -598,10 +599,12 @@ bool linda_input(int timeout, const char * match_string, ...)
 	va_end(v_init);
 	return ret;
 }
+
 bool vlinda_input(int timeout, const char * match_string, va_list * v_init)
 {
 	return vlinda_in_generic(true, timeout, match_string, v_init);
 }
+
 bool linda_read(int timeout, const char * match_string, ...)
 {
 	va_list v_init;
@@ -612,6 +615,7 @@ bool linda_read(int timeout, const char * match_string, ...)
 	va_end(v_init);
 	return ret;
 }
+
 bool vlinda_read(int timeout, const char * match_string, va_list * v_init)
 {
 	return vlinda_in_generic(false, timeout, match_string, v_init);
