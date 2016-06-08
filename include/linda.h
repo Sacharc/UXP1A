@@ -13,6 +13,6 @@ bool linda_input(int timeout, char* match_string, ...);
 //zwraca czy znaleziono krotkę zgodną z podanym wzorcem lub timeout
 bool linda_read(int timeout, char* match_string, ...);
 int linda_init();
-int linda_end();
+int linda_end(int segment_id);
 
 #endif //TEST_LINDA_H

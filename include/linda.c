@@ -9,6 +9,7 @@
 #define TUPLE_CONTENT_LENGTH 128
 #define TUPLE_COUNT 128
 #define INFO_STRING_PARAM_NOT_RECOGNIZED "Info string parameter not recognized"
+#define FTOK_PATH "/tmp"
 
 struct tuple
 {
@@ -44,11 +45,11 @@ size_t string_to_tuple(const char * input, char * output)
 struct mem * linda_memory = NULL;
 
 // TODO? http://stackoverflow.com/questions/16423789/can-i-resize-linux-shared-memory-with-shmctl
+//Return segment_id if operation success, else return -1
 int linda_init()
 {
     /* Allocate a shared memory segment.  */
-    //printf(stderr, "IPC_PRIVATE == %#lx\n", IPC_PRIVATE);
-    key_t key = ftok("/tmp", 1); // z góry zadany id klucza naszego segemntu pozwala na obsluzenie wielu initow - 1 raz pamiec sie tworzy, potem tylko zwraca segemnt_id juz istniejacej pamieci
+    key_t key = ftok(FTOK_PATH, 1);
     if (key == (key_t) -1)
     {
         perror("IPC error: ftok");
@@ -72,9 +73,10 @@ int linda_init()
     {
         linda_memory->tuple_count = 0;
     }
+    return segment_id;
 }
 
-int linda_end()
+int linda_end(int segment_id)
 {
     /* Detach the shared memory segment.  */
     if(shmdt(linda_memory) == -1)
@@ -83,7 +85,7 @@ int linda_end()
     }
 
     /* Deallocate the shared memory segment.  */
-    if(shmctl(linda_memory, IPC_RMID, NULL) == -1)
+    if(shmctl(segment_id, IPC_RMID, NULL) == -1)
     {
         perror("IPC error shmctl(). Cannot deallocate shared memory.");
     }
@@ -139,7 +141,7 @@ bool linda_output(char * info_string, ...)
 
     //Powiększyć przestrzeń w linda_memory o kolejną krotkę (+ zwiększyć licznik)
     //Zdobyć wskaźnik tuple * CurrentTuple na świeżo zaalokowaną krotkę
-    linda_init();
+    int segment_id = linda_init();
 
     //3.
     size_t current_tuple_position = 0;
@@ -147,7 +149,7 @@ bool linda_output(char * info_string, ...)
     linda_memory->tuple_count += 1;
 
     //Wrzucamy InfoString do pamięci
-    memcpy(current_tuple->tuple_content + current_tuple_position, info_string_length, info_string_length + 1);
+    memcpy(current_tuple->tuple_content + current_tuple_position, info_string, info_string_length + 1);
     current_tuple_position += info_string_length + 1;
 
     //Wrzucamy dane do pamięci
@@ -187,7 +189,7 @@ bool linda_output(char * info_string, ...)
     va_end(vl);
 
 
-    linda_end();
+    linda_end(segment_id);
 
     return true;
 }
