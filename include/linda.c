@@ -104,7 +104,7 @@ int linda_end(int segment_id)
 bool linda_output(char * info_string, ...)
 {
     va_list vl;
-    va_start(info_string, vl);
+    va_start(vl, info_string);
     bool ret = vlinda_output(info_string, vl);
     va_end(vl);
 
