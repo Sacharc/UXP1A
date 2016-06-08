@@ -178,7 +178,7 @@ TEST(Functional_String_Test, eq_test)
 //    EXPECT_EQ(strcmp(value, "b"), 0);
 
     char value1[128];
-    EXPECT_TRUE(linda_input(1, "s=b", value1));
+    EXPECT_TRUE(linda_input(1, "s==b", value1));
     EXPECT_EQ(strcmp(value1, "b"), 0);
     linda_end(seg_id);
 }
@@ -189,6 +189,6 @@ TEST(Functional_String_Test, eq_test_neg)
     EXPECT_TRUE(linda_output("s", "b"));
     char value[128];
 //    EXPECT_FALSE(linda_read(1, "s=c", value));
-    EXPECT_FALSE(linda_input(1, "s=c", value));
+    EXPECT_FALSE(linda_input(1, "s==c", value));
     linda_end(seg_id);
 }

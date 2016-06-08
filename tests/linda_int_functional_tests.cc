@@ -178,7 +178,7 @@ TEST(Functional_Int_Test, eq_test)
 //    EXPECT_EQ(3, value);
 
     int value1;
-    EXPECT_TRUE(linda_input(1, "i=3", &value1));
+    EXPECT_TRUE(linda_input(1, "i==3", &value1));
     EXPECT_EQ(3, value1);
     linda_end(seg_id);
 }
@@ -189,6 +189,6 @@ TEST(Functional_Int_Test, eq_test_neg)
     EXPECT_TRUE(linda_output("i", 1));
     int value;
 //    EXPECT_FALSE(linda_read(1, "i=2", &value));
-    EXPECT_FALSE(linda_input(1, "i=2", &value));
+    EXPECT_FALSE(linda_input(1, "i==2", &value));
     linda_end(seg_id);
 }
