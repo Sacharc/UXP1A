@@ -235,37 +235,37 @@ bool compare_string(const char * operator_, const char * string_a, const char * 
     return false;
 }
 
-bool compare_int(const char * operator, int a, int b)
+bool compare_int(const char * operator_, int a, int b)
 {
-    if(strcmp(operator, "==") == 0)
+    if(strcmp(operator_, "==") == 0)
         return a == b;
-    if(strcmp(operator, ">=") == 0)
+    if(strcmp(operator_, ">=") == 0)
         return a >= b;
-    if (strcmp(operator, "<=") == 0)
+    if (strcmp(operator_, "<=") == 0)
         return a <= b;
-    if (strcmp(operator, ">") == 0)
+    if (strcmp(operator_, ">") == 0)
         return a > b;
-    if (strcmp(operator, "<") == 0)
+    if (strcmp(operator_, "<") == 0)
         return a < b;
 
     perror("Operator comparison error");
     return false;
 }
 
-bool compare_double(const char * operator, double a, double b)
+bool compare_double(const char * operator_, double a, double b)
 {
-    if(strcmp(operator, "==") == 0)
+    if(strcmp(operator_, "==") == 0)
     {
         perror("Cant perform equal for float");
         return false;
     }
-    if(strcmp(operator, ">=") == 0)
+    if(strcmp(operator_, ">=") == 0)
         return a >= b;
-    if (strcmp(operator, "<=") == 0)
+    if (strcmp(operator_, "<=") == 0)
         return a <= b;
-    if (strcmp(operator, ">") == 0)
+    if (strcmp(operator_, ">") == 0)
         return a > b;
-    if (strcmp(operator, "<") == 0)
+    if (strcmp(operator_, "<") == 0)
         return a < b;
 
     perror("Operator comparison error");
