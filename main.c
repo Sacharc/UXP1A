@@ -1,6 +1,8 @@
-#include <argp.h>
-#include <stdlib.h>
+#define _POSIX_C_SOURCE 200809L
 
+#include <argp.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include "include/linda.h"
 
@@ -8,9 +10,12 @@
 
 static char noLogging = 0;
 
-static int parse_opt(int key, char *arg, struct argp_state *state) {
-    switch (key) {
-        case 'n': {
+static int parse_opt(int key, char *arg, struct argp_state *state)
+{
+    switch (key)
+    {
+        case 'n':
+        {
             noLogging = 1;
             break;
         }
@@ -18,76 +23,103 @@ static int parse_opt(int key, char *arg, struct argp_state *state) {
     return 0;
 }
 
-int input(char* line, size_t lineLength);
-int output(char* line, size_t lineLength);
-int read();
+int input(char *line, size_t line_length, bool (*)(int, char*, va_list));
 
-int checkIntegerMatchString(char*);
-int checkFloatMatchString(char*);
-int checkStringMatchString(char*);
-int getNumberStart(char* string, char** numberStart);
-char* getWord(char *str);
-char* getWordsInsideQuotes(char *str);
-char* trimWhitespace(char *str);
-void freeInputContent(char *, char *);
+int output(char *line, size_t line_length);
 
-void printErrorMessage(int status);
+int check_integer_match_string(char *);
 
-int main(int argc, char **argv) {
+int check_float_match_string(char *);
+
+int check_string_match_string(char *);
+
+int get_number_start(char *string, char **number_start);
+
+char *get_word(char *str);
+
+char *get_words_inside_quotes(char *str);
+
+char *trim_whitespace(char *str);
+
+void free_input_content(char *, char *);
+
+void print_error_message(int status);
+
+int main(int argc, char **argv)
+{
     struct argp_option options[] =
             {
-                    { "no-logging", 'n', 0, 0, "Disable logging to syslog"},
-                    { 0 }
+                    {"no-logging", 'n', 0, 0, "Disable logging to syslog"},
+                    {0}
             };
-    struct argp argp = { options, parse_opt, 0, 0 };
-    argp_parse (&argp, argc, argv, 0, 0, 0);
+    struct argp argp = {options, parse_opt, 0, 0};
+    argp_parse(&argp, argc, argv, 0, 0, 0);
 
 
-//    linda_init();
+    int segment_id = linda_init();
 
-    char *rawLine = NULL;
+    char *raw_line = NULL;
     size_t length = 0;
 
     int status;
-    while(1) {
+    while (1)
+    {
         printf(">");
 
-        __ssize_t bytesRead = getline(&rawLine, &length, stdin);
-        if (bytesRead == -1) {
+        __ssize_t bytesRead = getline(&raw_line, &length, stdin);
+        if (bytesRead == -1)
+        {
             break;
         }
 
-        char *line = trimWhitespace(rawLine);
-        size_t lineLength = strlen(line);
-        if (lineLength == 0){
+        char *line = trim_whitespace(raw_line);
+        size_t line_length = strlen(line);
+        if (line_length == 0)
+        {
             continue;
         }
 
-        if (strcmp(line, "EXIT") == 0) {
+        if (strcmp(line, "EXIT") == 0)
+        {
             break;
         }
 
         char *instruction = strtok(line, "  \t");
-        if(strcmp(instruction, "OUTPUT") == 0) {
+        if (strcmp(instruction, "OUTPUT") == 0)
+        {
 //            linda_output("isf", 777, "testowe", 3.14);
-            status = output(line, lineLength);
-            if(status) {
-                printErrorMessage(status);
+            status = output(line, line_length);
+            if (status)
+            {
+                print_error_message(status);
             }
-        } else if(strcmp(instruction, "INPUT") == 0) {
-            status = input(line, lineLength);
-            if(status) {
-                printErrorMessage(status);
+        }
+        else if (strcmp(instruction, "INPUT") == 0)
+        {
+//            status = input(line, line_length, &vlinda_input);
+            status = input(line, line_length, NULL);
+            if (status)
+            {
+                print_error_message(status);
             }
-        } else if(strcmp(instruction, "READ") == 0) {
-            read();
-        } else {
+        }
+        else if (strcmp(instruction, "READ") == 0)
+        {
+//            status = input(line, line_length, &vlinda_read);
+            status = input(line, line_length, NULL);
+            if (status)
+            {
+                print_error_message(status);
+            }
+        }
+        else
+        {
             printf("Instruction not recognized\n");
         }
     }
 
-    free(rawLine);
-//    linda_end();
+    free(raw_line);
+    linda_end(segment_id);
 }
 
 
@@ -103,105 +135,122 @@ int main(int argc, char **argv) {
 #define ERR_NO_TIMEOUT 10
 #define ERR_NOT_FOUND 11
 
-int input(char* line, size_t lineLength) {
-    char* matchString = strtok(NULL, " \t");
+int input(char *line, size_t line_length, bool (*input_function)(int, char*, va_list))
+{
+    char *match_string = strtok(NULL, " \t");
 
-    if(matchString == NULL) {
+    if (match_string == NULL)
+    {
         return ERR_NO_MATCH_STRING;
     }
 
     // Check if timeout is specified
-    char* option = strtok(NULL, " \t");
+    char *option = strtok(NULL, " \t");
 
     int timeout = 0;
-    if (option != NULL) {
-        if(strcmp(option, "timeout") == 0) {
-            char *timeoutString = strtok(NULL, " \t");
-            if(timeoutString == NULL) {
+    if (option != NULL)
+    {
+        if (strcmp(option, "timeout") == 0)
+        {
+            char *timeout_string = strtok(NULL, " \t");
+            if (timeout_string == NULL)
+            {
                 return ERR_NO_TIMEOUT;
             }
             // Check if it was the last option
-            if (timeoutString + strlen(timeoutString) != line + lineLength) {
+            if (timeout_string + strlen(timeout_string) != line + line_length)
+            {
                 return ERR_VARIABLES_NUM;
             }
             char *end;
-            timeout = (int)strtol(timeoutString, &end, 10);
-            if(*end != '\0') {
+            timeout = (int) strtol(timeout_string, &end, 10);
+            if (*end != '\0')
+            {
                 return ERR_INT_PARSE;
             }
-            if(timeout < 0) {
+            if (timeout < 0)
+            {
                 return ERR_NEGATIVE_TIMEOUT;
             }
-        } else {
+        }
+        else
+        {
             return ERR_UNRECOGNIZED_OPT;
         }
     }
 
-    char* input = NULL;
+    char *input = NULL;
     size_t offset = 0;
 
-    size_t matchStringLength = strlen(matchString);
+    size_t match_string_length = strlen(match_string);
 
-    // Maximum number of variables is the length of matchString
-    char types[matchStringLength];
+    // Maximum number of variables is the length of match_string
+    char types[match_string_length];
     types[0] = '\0';
 
-    // We will need to modify matchString in order to extract it's parts, so we make copy of it first.
-    char matchStringCopy[matchStringLength + 1];
-    strcpy(matchStringCopy, matchString);
+    // We will need to modify match_string in order to extract it's parts, so we make copy of it first.
+    char match_string_copy[match_string_length + 1];
+    strcpy(match_string_copy, match_string);
 
-    char* typeString = strtok(matchStringCopy, ",");
+    char *type_string = strtok(match_string_copy, ",");
     int error;
 
-    while(1) {
-        switch(typeString[0]) {
+    while (1)
+    {
+        switch (type_string[0])
+        {
             case 'i':
-                error = checkIntegerMatchString(typeString);
-                if(error) {
-                    freeInputContent(input, types);
+                error = check_integer_match_string(type_string);
+                if (error)
+                {
+                    free_input_content(input, types);
                     free(input);
                     return ERR_WRONG_MATCH_STRING;
                 }
                 strcat(types, "i");
-                input = (char*)realloc(input, offset + sizeof(int*));
-                int* integer = (int*)malloc(sizeof(int));
-                *((int**)(input + offset)) = integer;
-                offset += sizeof(int*);
+                input = (char *) realloc(input, offset + sizeof(int *));
+                int *integer = (int *) malloc(sizeof(int));
+                *((int **) (input + offset)) = integer;
+                offset += sizeof(int *);
                 break;
-            case 'f': {
-                error = checkFloatMatchString(typeString);
-                if(error) {
-                    freeInputContent(input, types);
+            case 'f':
+            {
+                error = check_float_match_string(type_string);
+                if (error)
+                {
+                    free_input_content(input, types);
                     free(input);
                     return ERR_WRONG_MATCH_STRING;
                 }
                 strcat(types, "f");
-                input = (char*)realloc(input, offset + sizeof(float*));
-                float* floatingPoint = (float*)malloc(sizeof(float));
-                *((float**)(input + offset)) = floatingPoint;
-                offset += sizeof(float*);
+                input = (char *) realloc(input, offset + sizeof(float *));
+                float *floating_point = (float *) malloc(sizeof(float));
+                *((float **) (input + offset)) = floating_point;
+                offset += sizeof(float *);
                 break;
             }
             case 's':
-                error = checkStringMatchString(typeString);
-                if(error) {
-                    freeInputContent(input, types);
+                error = check_string_match_string(type_string);
+                if (error)
+                {
+                    free_input_content(input, types);
                     free(input);
                     return ERR_WRONG_MATCH_STRING;
                 }
                 strcat(types, "s");
-                input = (char*)realloc(input, offset + sizeof(char**));
-                char* string = (char*)malloc(sizeof(char) * 100);
-                *((char**)(input + offset)) = string;
-                offset += sizeof(char*);
+                input = (char *) realloc(input, offset + sizeof(char **));
+                char *string = (char *) malloc(sizeof(char) * 100);
+                *((char **) (input + offset)) = string;
+                offset += sizeof(char *);
                 break;
             default:
-                freeInputContent(input, types);
+                free_input_content(input, types);
                 free(input);
                 return ERR_WRONG_MATCH_STRING;
         }
-        typeString = strtok(NULL, ",");
-        if(typeString == NULL) {
+        type_string = strtok(NULL, ",");
+        if (type_string == NULL)
+        {
             break;
         }
     }
@@ -210,10 +259,8 @@ int input(char* line, size_t lineLength) {
     dynamic_va_list va_list_linda;
     dynamic_va_start(&va_list_linda, input);
 
-    // For testing purpose
-    vscanf("%i %s %f", va_list_linda._va_list);
 
-//    int error = vlinda_input(timeout, matchString, va_list_linda._va_list);
+//    bool error = (*input_function)(timeout, match_string, va_list_linda._va_list);
 //    if(error) {
 //        return ERR_NOT_FOUND;
 //    }
@@ -221,38 +268,41 @@ int input(char* line, size_t lineLength) {
     // Build format string for vprintf
 
     //6 characters per every printed variable and 2 characters for new line and 0
-    size_t formatStringLength = matchStringLength * 6 + 2;
-    char printfFormatString[formatStringLength];
-    printfFormatString[0] = '\0';
+    size_t format_string_length = match_string_length * 6 + 2;
+    char printf_format_string[format_string_length];
+    printf_format_string[0] = '\0';
 
-    size_t typesLength = strlen(types);
-    for(size_t i = 0; i < typesLength; ++i) {
-        strncat(printfFormatString, types + i, 1);
-        strcat(printfFormatString, ": %");
-        strncat(printfFormatString, types + i, 1);
-        strcat(printfFormatString, " ");
+    size_t types_length = strlen(types);
+    for (size_t i = 0; i < types_length; ++i)
+    {
+        strncat(printf_format_string, types + i, 1);
+        strcat(printf_format_string, ": %");
+        strncat(printf_format_string, types + i, 1);
+        strcat(printf_format_string, " ");
     }
-    strcat(printfFormatString, "\n");
+    strcat(printf_format_string, "\n");
 
     // Get va_list for vprintf
 
-    char* output = NULL;
+    char *output = NULL;
     offset = 0;
-    for(size_t i = 0; i < typesLength; ++i) {
-        switch(types[i]) {
+    for (size_t i = 0; i < types_length; ++i)
+    {
+        switch (types[i])
+        {
             case 'i':
-                output = (char*)realloc(output, offset + VLIST_CHUNK_SIZE);
-                *((int*)(output + offset)) = **((int**)(input + offset));
+                output = (char *) realloc(output, offset + VLIST_CHUNK_SIZE);
+                *((int *) (output + offset)) = **((int **) (input + offset));
                 offset += VLIST_CHUNK_SIZE;
                 break;
             case 'f':
-                output = (char*)realloc(output, offset + VLIST_CHUNK_SIZE);
-                *((float*)(output + offset)) = **((float**)(input + offset));
+                output = (char *) realloc(output, offset + VLIST_CHUNK_SIZE);
+                *((float *) (output + offset)) = **((float **) (input + offset));
                 offset += VLIST_CHUNK_SIZE;
                 break;
             case 's':
-                output = (char*)realloc(output, offset + VLIST_CHUNK_SIZE);
-                *((char**)(output + offset)) = *((char**)(input + offset));
+                output = (char *) realloc(output, offset + VLIST_CHUNK_SIZE);
+                *((char **) (output + offset)) = *((char **) (input + offset));
                 offset += VLIST_CHUNK_SIZE;
                 break;
         }
@@ -261,93 +311,108 @@ int input(char* line, size_t lineLength) {
     dynamic_va_list va_list_printf;
     dynamic_va_start(&va_list_printf, output);
 
-    vprintf(printfFormatString, va_list_printf._va_list);
+    vprintf(printf_format_string, va_list_printf._va_list);
 
     // Free memory
     dynamic_va_end(&va_list_printf);
-    freeInputContent(input, types);
+    free_input_content(input, types);
     dynamic_va_end(&va_list_linda);
     return 0;
 }
 
-int output(char* line, size_t lineLength) {
-    char* infoString = strtok(NULL, " \t");
+int output(char *line, size_t line_length)
+{
+    char *info_string = strtok(NULL, " \t");
 
-    if(infoString == NULL) {
+    if (info_string == NULL)
+    {
         return ERR_NO_INFOSTR;
     }
 
-    size_t outputSize = 0;
+    size_t output_size = 0;
 
     // Check info string validity
-    for (int i = 0; infoString[i] != '\0'; ++i) {
-        switch(infoString[i]) {
+    for (int i = 0; info_string[i] != '\0'; ++i)
+    {
+        switch (info_string[i])
+        {
             case 'i':
             case 'f':
             case 's':
-                outputSize += VLIST_CHUNK_SIZE;
+                output_size += VLIST_CHUNK_SIZE;
                 break;
             default:
                 return ERR_WRONG_INFOSTR;
         }
     }
 
-    char* output = malloc(outputSize);
+    char *output = malloc(output_size);
 
-    void* currentPlace = output;
-    char *variable = infoString;
-    for(int i = 0; infoString[i] != '\0'; ++i) {
+    void *current_place = output;
+    char *variable = info_string;
+    for (int i = 0; info_string[i] != '\0'; ++i)
+    {
         // Check if the previous variable was the last one.
-        size_t variableLength = strlen(variable);
-        if(variable + variableLength == line + lineLength) {
+        size_t variable_length = strlen(variable);
+        if (variable + variable_length == line + line_length)
+        {
             free(output);
             return ERR_VARIABLES_NUM;
         }
-        variable += variableLength + 1;
+        variable += variable_length + 1;
 
-        switch(infoString[i]) {
-            case 'i': {
-                variable = getWord(variable);
-                if (variable == NULL) {
+        switch (info_string[i])
+        {
+            case 'i':
+            {
+                variable = get_word(variable);
+                if (variable == NULL)
+                {
                     free(output);
                     return ERR_VARIABLES_NUM;
                 }
 
-                char* end;
-                int integer = (int)strtol(variable, &end, 10);
-                if(*end != '\0') {
+                char *end;
+                int integer = (int) strtol(variable, &end, 10);
+                if (*end != '\0')
+                {
                     free(output);
                     return ERR_INT_PARSE;
                 }
-                *(int*)currentPlace = integer;
-                currentPlace += VLIST_CHUNK_SIZE;
+                *(int *) current_place = integer;
+                current_place += VLIST_CHUNK_SIZE;
                 break;
             }
-            case 'f': {
-                variable = getWord(variable);
-                if (variable == NULL) {
+            case 'f':
+            {
+                variable = get_word(variable);
+                if (variable == NULL)
+                {
                     free(output);
                     return ERR_VARIABLES_NUM;
                 }
 
-                char* end;
-                float floatingPoint = strtof(variable, &end);
-                if(*end != '\0') {
+                char *end;
+                float floating_point = strtof(variable, &end);
+                if (*end != '\0')
+                {
                     free(output);
                     return ERR_FLOAT_PARSE;
                 }
-                *(float*)currentPlace = floatingPoint;
-                currentPlace += VLIST_CHUNK_SIZE;
+                *(float *) current_place = floating_point;
+                current_place += VLIST_CHUNK_SIZE;
                 break;
             }
-            case 's': {
-                variable = getWordsInsideQuotes(variable);
-                if (variable == NULL) {
+            case 's':
+            {
+                variable = get_words_inside_quotes(variable);
+                if (variable == NULL)
+                {
                     free(output);
                     return ERR_VARIABLES_NUM;
                 }
-                *(char**)currentPlace = variable;
-                currentPlace += VLIST_CHUNK_SIZE;
+                *(char **) current_place = variable;
+                current_place += VLIST_CHUNK_SIZE;
                 break;
             }
         }
@@ -357,14 +422,16 @@ int output(char* line, size_t lineLength) {
 
 
 
-//    vlinda_output(infoString, args._valist);
+//    vlinda_output(info_string, args._valist);
 
     dynamic_va_end(&args);
     return 0;
 }
 
-void printErrorMessage(int status) {
-    switch(status) {
+void print_error_message(int status)
+{
+    switch (status)
+    {
         case ERR_NO_MATCH_STRING:
             printf("No match string\n");
             break;
@@ -401,168 +468,209 @@ void printErrorMessage(int status) {
     }
 }
 
-int read() {
-
-}
-
-char* getWord(char *string) {
+char *get_word(char *string)
+{
     size_t length = strlen(string);
 
-    char* numberStart = NULL;
-    for(size_t i = 0; i < length; ++i) {
-        if(!isspace(string[i])) {
-            numberStart = string + i;
+    char *word_start = NULL;
+    for (size_t i = 0; i < length; ++i)
+    {
+        if (!isspace(string[i]))
+        {
+            word_start = string + i;
             break;
         }
     }
 
-    if(numberStart == NULL) {
+    if (word_start == NULL)
+    {
         return NULL;
     }
 
-    length = strlen(numberStart);
+    length = strlen(word_start);
 
-    for(size_t i = 1; i < length; ++i) {
-        if(isspace(numberStart[i])) {
-            numberStart[i] = '\0';
+    for (size_t i = 1; i < length; ++i)
+    {
+        if (isspace(word_start[i]))
+        {
+            word_start[i] = '\0';
             break;
         }
     }
-    return numberStart;
+    return word_start;
 }
 
-
-char* getWordsInsideQuotes(char *string) {
+char *get_words_inside_quotes(char *string)
+{
     size_t length = strlen(string);
 
-    char* strStart = NULL;
-    for(size_t i = 0; i < length; ++i) {
-        if(!isspace(string[i])) {
+    char *str_start = NULL;
+    for (size_t i = 0; i < length; ++i)
+    {
+        if (!isspace(string[i]))
+        {
             // String must start with '"'
-            if(string[i] == '"') {
-                strStart = string + i + 1;
+            if (string[i] == '"')
+            {
+                str_start = string + i + 1;
             }
             break;
         }
     }
 
-    if(strStart == NULL) {
+    if (str_start == NULL)
+    {
         return NULL;
     }
 
-    length = strlen(strStart);
+    length = strlen(str_start);
 
-    char endOfStringFound = 0;
-    for(size_t i = 0; i < length; ++i) {
-        if(strStart[i] == '"') {
-            strStart[i] = '\0';
-            endOfStringFound = 1;
+    bool end_of_string_found = false;
+    for (size_t i = 0; i < length; ++i)
+    {
+        if (str_start[i] == '"')
+        {
+            str_start[i] = '\0';
+            end_of_string_found = true;
             break;
         }
     }
 
-    if(endOfStringFound) {
-        return strStart;
-    } else {
+    if (end_of_string_found)
+    {
+        return str_start;
+    }
+    else
+    {
         return NULL;
     }
 }
 
-int checkIntegerMatchString(char* string) {
+int check_integer_match_string(char *string)
+{
     size_t length = strlen(string);
-    if(length == 1) {
+    if (length == 1)
+    {
         return 0;
-    } else if(length < 2) {
+    }
+    else if (length < 2)
+    {
         return -1;
     }
 
-    char* integerStart;
-    int status = getNumberStart(string, &integerStart);
+    char *integer_start;
+    int status = get_number_start(string, &integer_start);
 
-    if(status) {
+    if (status)
+    {
         return status;
     }
-    char* end;
-    (int)strtol(integerStart, &end, 10);
-    if(*end != '\0') {
+    char *end;
+    (int) strtol(integer_start, &end, 10);
+    if (*end != '\0')
+    {
         return status;
     }
     return 0;
 }
 
-int checkFloatMatchString(char* string) {
+int check_float_match_string(char *string)
+{
     size_t length = strlen(string);
-    if(length == 1) {
+    if (length == 1)
+    {
         return 0;
-    } else if(length < 2) {
+    }
+    else if (length < 2)
+    {
         return -1;
     }
 
-    char* floatStart;
-    int status = getNumberStart(string, &floatStart);
-    if(status) {
+    char *float_start;
+    int status = get_number_start(string, &float_start);
+    if (status)
+    {
         return status;
     }
-    char* end;
-    strtof(floatStart, &end);
-    if(*end != '\0') {
+    char *end;
+    strtof(float_start, &end);
+    if (*end != '\0')
+    {
         return status;
     }
     return 0;
 }
 
-int checkStringMatchString(char* string) {
+int check_string_match_string(char *string)
+{
     size_t length = strlen(string);
-    if(length == 1) {
+    if (length == 1)
+    {
         return 0;
     }
     // String has to be longer than 3 to contain s==string
-    if(length < 4) {
+    if (length < 4)
+    {
         return -1;
     }
 
-    if(string[1] != '=' || string[2] != '=') {
+    if (string[1] != '=' || string[2] != '=')
+    {
         return -1;
     }
 
     return 0;
 }
 
-int getNumberStart(char* string, char** numberStart) {
+int get_number_start(char *string, char **number_start)
+{
     size_t length = strlen(string);
 
-    switch(string[1]) {
+    switch (string[1])
+    {
         case '=':
             // String has to be longer than 3 to contain i==int
-            if(length < 4) {
+            if (length < 4)
+            {
                 return -1;
             }
-            if(string[2] == '=') {
-                *numberStart = string + 3;
-            } else {
+            if (string[2] == '=')
+            {
+                *number_start = string + 3;
+            }
+            else
+            {
                 return -1;
             }
             break;
         case '<':
-            if(string[2] == '=') {
+            if (string[2] == '=')
+            {
                 // String has to be longer than 3 to contain i<=int
-                if(length < 4) {
+                if (length < 4)
+                {
                     return -1;
                 }
-                *numberStart = string + 3;
-            } else {
-                *numberStart = string + 2;
+                *number_start = string + 3;
+            }
+            else
+            {
+                *number_start = string + 2;
             }
             break;
         case '>':
-            if(string[2] == '=') {
+            if (string[2] == '=')
+            {
                 // String has to be longer than 3 to contain i>=int
-                if(length < 4) {
+                if (length < 4)
+                {
                     return -1;
                 }
-                *numberStart = string + 3;
-            } else {
-                *numberStart = string + 2;
+                *number_start = string + 3;
+            }
+            else
+            {
+                *number_start = string + 2;
             }
             break;
         default:
@@ -571,42 +679,48 @@ int getNumberStart(char* string, char** numberStart) {
     return 0;
 }
 
-void freeInputContent(char *input, char *types) {
+void free_input_content(char *input, char *types)
+{
     size_t length = strlen(types);
-    char* currentPlace = input;
-    for(size_t i = 0; i < length; ++i) {
-        switch(types[i]) {
+    char *current_place = input;
+    for (size_t i = 0; i < length; ++i)
+    {
+        switch (types[i])
+        {
             case 'i':
-                free(*((int**)currentPlace));
-                currentPlace += sizeof(int*);
+                free(*((int **) current_place));
+                current_place += sizeof(int *);
                 break;
             case 'f':
-                free(*((float**)currentPlace));
-                currentPlace += sizeof(float*);
+                free(*((float **) current_place));
+                current_place += sizeof(float *);
                 break;
             case 's':
-                free(*((char**)currentPlace));
-                currentPlace += sizeof(char*);
+                free(*((char **) current_place));
+                current_place += sizeof(char *);
                 break;
         }
     }
 }
 
 //http://stackoverflow.com/a/122721/5459240
-char* trimWhitespace(char *str) {
+char *trim_whitespace(char *str)
+{
     char *end;
 
     // Trim leading space
-    while(isspace(*str)) {
+    while (isspace(*str))
+    {
         str++;
     }
 
-    if(*str == 0)
+    if (*str == 0)
         return str;
 
     // Trim trailing space
     end = str + strlen(str) - 1;
-    while(end > str && isspace(*end)) {
+    while (end > str && isspace(*end))
+    {
         end--;
     }
 
