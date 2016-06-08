@@ -199,253 +199,165 @@ bool linda_output(char * info_string, ...)
     return true;
 }
 
-//Read tuple functions
 
-char* strdup(const char* p)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+bool compare_string(const char * operator, const char * string_a, const char * string_b)
 {
-    char* np = (char*)malloc(strlen(p)+1);
-    return np ? strcpy(np, p) : np;
+    if(strcmp(operator, "==") == 0)
+        return strcmp(string_a, string_b) == 0;
+    if(strcmp(operator, ">=") == 0)
+        return strcmp(string_a, string_b) >= 0;
+    if (strcmp(operator, "<=") == 0)
+        return strcmp(string_a, string_b) <= 0;
+    if (strcmp(operator, ">") == 0)
+        return strcmp(string_a, string_b) > 0;
+    if (strcmp(operator, "<") == 0)
+        return strcmp(string_a, string_b) < 0;
+
+    perror("Operator comparison error");
+    return false;
+}
+bool compare_int(const char * operator, int a, int b)
+{
+    //TODO
+}
+bool compare_double(const char * operator, double a, double b)
+{
+    //TODO
 }
 
-char** str_split(char* a_str, const char a_delim)
-{
-    char** result    = 0;
-    size_t count     = 0;
-    char* tmp        = a_str;
-    char* last_comma = 0;
-    char delim[2];
-    delim[0] = a_delim;
-    delim[1] = 0;
 
-    /* Count how many elements will be extracted. */
-    while (*tmp)
-    {
-        if (a_delim == *tmp)
-        {
-            count++;
-            last_comma = tmp;
-        }
-        tmp++;
-    }
 
-    /* Add space for trailing token. */
-    count += last_comma < (a_str + strlen(a_str) - 1);
 
-    /* Add space for terminating null string so caller
-       knows where the list of returned strings ends. */
-    count++;
 
-    result = malloc(sizeof(char*) * count);
 
-    if (result)
-    {
-        size_t idx  = 0;
-        char* token = strtok(a_str, delim);
 
-        while (token)
-        {
-            assert(idx < count);
-            *(result + idx++) = strdup(token);
-            token = strtok(0, delim);
-        }
-        assert(idx == count - 1);
-        *(result + idx) = 0;
-    }
 
-    return result;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /**
- * Checks if match string and info string match. Method doesn't check conditions, just checks types.
- *
- * @return info string position end position if correct, otherwise -1
- */
-size_t match_string_and_info_string_match(char *const *tokens, const char *tuple_content_read) {
-    size_t tuple_content_iterator = 0;
-    for (; tuple_content_read[tuple_content_iterator] != 0; ++tuple_content_iterator)
-    {
-
-        if (tuple_content_read[tuple_content_iterator] != *(tokens + tuple_content_iterator))
-        {
-            //match string and tuple info string doesn't match
-            return -1;
-        }
-    }
-
-    if (*(tokens + tuple_content_iterator) != '\0')
-    {
-        //match_string is longer than info string
-        return -1;
-    }
-
-    return tuple_content_iterator;
-}
-
-bool compare_string(char * operator, int string_comparison)
+		Sprawdza, czy info_string i match_string definiują taką samą krotkę
+*/
+bool info_string_match_string_equals(const char * info_string, const char * match_string)
 {
-    if (strcmp(operator, "=="))
-    {
-        if (string_comparison != 0)
-        {
-            return false;
-        }
-    }
-    else if (strcmp(operator, ">="))
-    {
-        if (string_comparison > 0) //TODO check if correct operator
-        {
-            return false;
-        }
-    }
-    else if (strcmp(operator, "<="))
-    {
-        if (string_comparison < 0) //TODO check if correct operator
-        {
-            return false;
-        }
-    }
-    else if (strcmp(operator[0], ">"))
-    {
-        if (string_comparison > 0) //TODO check if correct operator
-        {
-            return false;
-        }
-    }
-    else if (strcmp(operator[0], "<"))
-    {
-        if (string_comparison < 0) //TODO check if correct operator
-        {
-            return false;
-        }
-    }
-    else
-    {
-        perror("Operator comparison error");
-        return false;
-    }
-    return true;
-}
+    size_t info_string_position = 0;
+    size_t match_string_position = 0;
 
-
-bool compare_number(char *operator, char i, char character_from_tuple, int number_type)
-{
-    if (strcmp(operator, "=="))
+    for(;;)
     {
-        if (IS_FLOAT == number_type || i != character_from_tuple)
-        {
+        //Jeśli znaki nie są identyczne
+        if(info_string[info_string_position] != match_string[match_string_position])
             return false;
-        }
-    }
-    else if (strcmp(operator, ">="))
-    {
-        if (i < character_from_tuple)
+
+        //Jeśli oba się kończą (to w zasadzie ma sens tylko dla pierwszego znaku)
+        if(info_string[info_string_position] == NULL)
+            return true;
+
+        //Przesuwamy iterator info_string o jeden znak do przodu
+        info_string_position++;
+
+        //Przesuwamy iterator match_string na znak po przecinku (albo null)
+        for(;;)
         {
-            return false;
-        }
-    }
-    else if (strcmp(operator, "<="))
-    {
-        if (i > character_from_tuple)
-        {
-            return false;
-        }
-    }
-    else if (strcmp(operator[0], ">"))
-    {
-        if (i <= character_from_tuple)
-        {
-            return false;
-        }
-    }
-    else if (strcmp(operator[0], "<"))
-    {
-        if (i >= character_from_tuple)
-        {
-            return false;
-        }
-    }
-    else
-    {
-        perror("Operator comparison error");
-        return false;
-    }
-
-}
-
-/**
- * Checks if tuple contains values from match string.
- */
-bool tuple_values_contain_match_string_values(char *const *match_string_tokens, const char *tuple_content_read,
-                                              size_t info_string_end_position)
-{
-    size_t offset = info_string_end_position + 1;
-    for (size_t i = 0; *(match_string_tokens + i); ++i)
-    {
-        char* token = *(match_string_tokens + i);
-        char operator[OPERATOR_STRING_LENGTH_INDEX];
-        operator[0] = token[OPERATOR_FIRST_CHARACTER_INDEX];
-        operator[1] = token[OPERATOR_SECOND_CHARACTER_INDEX];
-
-
-        switch (token[VALUE_TYPE_INDEX])
-        {
-            case 's':
-            {
-
-                char * string_from_tuple;
-                size_t string_size = strlen(tuple_content_read);
-                memcpy (string_from_tuple, tuple_content_read, string_size);
-
-                char * string_from_match_string;
-                size_t string_from_match_string_size = strlen(string_from_match_string);
-                memcpy (string_from_match_string, token +
-                                           VALUE_TYPE_INDEX, string_from_match_string_size);
-                int string_comparison = strcmp(string_from_tuple, string_from_match_string);
-
-                free(string_from_tuple);
-                free(string_from_match_string);
-
-                if (!compare_string(operator, string_comparison))
-                {
-                    return false;
-                }
+            if(match_string[match_string_position] == ',' || match_string[match_string_position] == NULL)
                 break;
-            }
-            case 'i':
-            {
-                if (!compare_number(operator, token[FIRST_CHARACTER_TO_COMPARE_INDEX], tuple_content_read[offset], IS_INT))
-                {
-                    return false;
-                }
-
-                ++offset;
-            }
-            case 'f':
-            {
-                if (!compare_number(operator, token[FIRST_CHARACTER_TO_COMPARE_INDEX], tuple_content_read[offset], IS_FLOAT))
-                {
-                    return false;
-                }
-            }
-            default:
-            {
-                perror(OPERATOR_NOT_REGOGNIZED);
-                return false;
-            }
-
+            match_string_position++;
         }
-    }
 
-    return true;
+        //Jeśli match-string się skończył - sprawdzamy czy info_string też się skończył
+        if(match_string[match_string_position] == NULL)
+            return info_string[info_string_position] == NULL;
+
+        //Nie - jesteśmy na przecinku, przesuwamy się za niego
+        match_string_position++;
+    }
 }
 
-void free_match_string_tokens_memory(char **match_string_tokens)
+bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * match_string)
 {
-    for (size_t i = 0; *(match_string_tokens + i); ++i)
+    //Sprawdzamy, czy w ogóle typy są zgodne
+    if(!info_string_match_string_equals(tuple_to_match->tuple_content, match_string))
+        return false;
+
+
+    size_t tuple_to_match_position = strlen(&tuple_to_match->tuple_content[0]) + 1; //pomijamy info_string
+
+    //Właściwe filtry
+    //current_match_string_token_start wskazuje na pierwszy znak filtra
+    //current_match_string_token_end wskazuje na ostatni znak filtra
+
+    const char * current_match_string_token_start = match_string;
+    for(;;)
     {
-        free(*(match_string_tokens + i));
+        //Wyciągamy tekst od obecnej pozycji do nulla albo przecinka.
+        //Pozycję zwraca nam strchr
+        char current_match_string_token[TUPLE_CONTENT_LENGTH];
+
+        //Szukamy ',' albo końca tekstu
+        const char * current_match_string_token_end = strchr(current_match_string_token_start, ',');
+        if(current_match_string_token_end == NULL) //Przecinka nie ma, jest koniec tekstu.
+            current_match_string_token_end = current_match_string_token_start + strlen(current_match_string_token_start);
+
+        //Długość od start do end
+        const size_t current_match_string_token_length = current_match_string_token_end - current_match_string_token_start;
+
+        //Wykopiowujemy do dedykowanego bufora
+        strncpy(current_match_string_token, current_match_string_token_start, current_match_string_token_length);
+
+        //Do kolejnego obiegu pętli przesuwamy start za end. current_match_string_token_start może być nieprawidłowy (wskazywać za końcem), ale to jeszcze sprawdzi nam check na dole
+        current_match_string_token_start = current_match_string_token_end + 1;
+
+        //Pomijamy 1, bo jeśli jest samo i / f / s to info_string_match_string_equals już to sprawdziło
+        if(current_match_string_token_length > 1)
+        {
+            switch(current_match_string_token[0])
+            {
+                case 'i':
+                {
+                    //0. Wyciągnąć operator
+                    //1. wyciągnąć int z tuple_to_match[tuple_to_match_position]
+                    //2. wyciągnąć int z tekstu za operatorem
+                    //3. Jeśli nie udało się compare_int - zwrócić false
+                    break;
+                }
+            }
+        }
+
+
+        //Czy to koniec napisu? Jeśli wcześniej nie wyszliśmy - zwracamy true
+        if(*current_match_string_token_end == NULL)
+            return true;
     }
-    free(match_string_tokens);
 }
 
 /**
@@ -454,72 +366,61 @@ void free_match_string_tokens_memory(char **match_string_tokens)
  * @param  match_string the pointer to match_string
  * @return tuple number, or -1 if fails.
  */
-int readTuple(char *match_string)
+int extract_tuple_from_shmem(const char * match_string)
 {
-    char** match_string_toneks = str_split(match_string, ',');
-    if (match_string_toneks)
+    unsigned int tuple_id = 0;
+    for(;;)
     {
-        for (size_t tuple_iterator; tuple_iterator < TUPLE_COUNT; ++tuple_iterator)
-        {
-            struct tuple tuple_read = linda_memory->first_tuple[tuple_iterator];
-            size_t info_string_end_position =
-                    match_string_and_info_string_match(match_string_toneks, tuple_read.tuple_content);
-
-            if (info_string_end_position != -1
-                 && tuple_values_contain_match_string_values(match_string_toneks, tuple_read.tuple_content, info_string_end_position))
-            {
-                return tuple_iterator;
-            }
-        }
-
-        free_match_string_tokens_memory(match_string_toneks);
-        return -1;
+        struct tuple * tuple_to_match = &linda_memory->first_tuple[tuple_id];
+        if(tuple_match_match_string(tuple_to_match, match_string))
+            return tuple_id;
     }
-    return -1;
 
+    return -1;
 }
 
 bool linda_input(int timeout, char* match_string, ...)
 {
-    int tuple_index = readTuple(match_string);
+    int tuple_index = extract_tuple_from_shmem(match_string);
+
     if (tuple_index == -1)
     {
         perror("Matched tuple not found");
+        return false;
     }
 
-    struct tuple * found_tuple = linda_memory->first_tuple + tuple_index;
-    size_t  info_string_length = strlen(found_tuple->tuple_content) + 1;
+    //Otrzymaliśmy krotkę z extract_tuple_from_shmem, więc jej dane na pewno zgadzają się z tym, co w va_list
+    const struct tuple * found_tuple = &linda_memory->first_tuple[tuple_index];
+    const size_t info_string_length = strlen(found_tuple->tuple_content);
 
-    char * info_string;
-    memcpy(info_string, found_tuple->tuple_content, info_string_length);
+    size_t info_string_position = 0;
+    size_t tuple_position = info_string_length + 1;
 
     va_list vl;
-    va_start(vl, info_string);
-    size_t info_string_position = 0;
-    size_t found_tuple_position = info_string_length;
+    va_start(vl, match_string);
 
     //Memcpy for arguments in va_list
-    while(info_string[info_string_position] != 0)
+    while(found_tuple->tuple_content[info_string_position] != NULL)
     {
-        switch(info_string[info_string_position])
+        switch(found_tuple->tuple_content[info_string_position])
         {
             case 'i':
             {
-                memcpy(va_arg(vl, int *), found_tuple->tuple_content + found_tuple_position, sizeof(int));
-                found_tuple_position += sizeof(int);
+                memcpy(va_arg(vl, int *), &found_tuple->tuple_content[0] + tuple_position, sizeof(int));
+                tuple_position += sizeof(int);
                 break;
             }
             case 'f':
             {
-                memcpy(va_arg(vl, double *), found_tuple->tuple_content + found_tuple_position, sizeof(double));
-                found_tuple_position += sizeof(double);
+                memcpy(va_arg(vl, double *), &found_tuple->tuple_content[0] + tuple_position, sizeof(double));
+                tuple_position += sizeof(double);
                 break;
             }
             case 's':
             {
-                size_t string_length = strlen(found_tuple->tuple_content + found_tuple_position);
-                memcpy(va_arg(vl, char *), found_tuple->tuple_content + found_tuple_position, string_length);
-                found_tuple_position += string_length;
+                const size_t string_length = strlen(&found_tuple->tuple_content[0] + tuple_position);
+                memcpy(va_arg(vl, char *), &found_tuple->tuple_content[0] + tuple_position, string_length + 1);
+                tuple_position += string_length + 1;
                 break;
             }
             default:
@@ -537,7 +438,7 @@ bool linda_input(int timeout, char* match_string, ...)
     Each tuple goes to its index-1, last index is not modify*/
 
     //Replace tuple index by decr by 1
-    while (tuple_index < linda_memory->tuple_count - 1)
+    /*while (tuple_index < linda_memory->tuple_count - 1)
     {
         memcpy(linda_memory->first_tuple + tuple_index, linda_memory->first_tuple + tuple_index + 1, TUPLE_COUNT);
         ++tuple_index;
@@ -545,6 +446,9 @@ bool linda_input(int timeout, char* match_string, ...)
 
     //Last index to NULL
     memset(linda_memory->first_tuple + tuple_index, 0, sizeof linda_memory->first_tuple + tuple_index);
-    --linda_memory->tuple_count;
+    --linda_memory->tuple_count;*/
+
+    //Kopiuje wszystkie krotki za wyciąganą o jedno miejsce do tyłu. Zmniejsza licznik krotek
+    memcpy(&linda_memory->first_tuple[tuple_index], &linda_memory->first_tuple[tuple_index + 1], (--linda_memory->tuple_count - tuple_index) * sizeof(struct tuple));
 
 }
