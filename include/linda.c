@@ -391,8 +391,8 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 		}
 		else
 		{
-			char operator[3];
-			const char * match_string_post_operator = match_string_extract_operator(current_match_string_token, operator);
+			char operator_[3];
+			const char * match_string_post_operator = match_string_extract_operator(current_match_string_token, operator_);
 			//printf("Iteracja tuple_match_match_string: `%c` `%s` `%s`\n", current_match_string_token[0], operator, match_string_post_operator);
 			
 			switch(current_match_string_token[0])
@@ -405,7 +405,7 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 					
 					tuple_to_match_position += sizeof(int);
 					
-					if(!compare_int(operator, tuple_int, match_string_post_operator_int))
+					if(!compare_int(operator_, tuple_int, match_string_post_operator_int))
 						return false;
 					
 					break;
@@ -418,7 +418,7 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 					
 					tuple_to_match_position += sizeof(tuple_double);
 					
-					if(!compare_double(operator, tuple_double, match_string_post_operator_double))
+					if(!compare_double(operator_, tuple_double, match_string_post_operator_double))
 						return false;
 					
 					break;
@@ -428,7 +428,7 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 					const char * tuple_string = &tuple_to_match->tuple_content[0] + tuple_to_match_position;
 					size_t tuple_string_length = strlen(tuple_string);
 					
-					if(!compare_string(operator, tuple_string, match_string_post_operator))
+					if(!compare_string(operator_, tuple_string, match_string_post_operator))
 						return false;
 					
 					tuple_to_match_position += tuple_string_length + 1;
