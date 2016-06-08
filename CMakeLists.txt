@@ -13,19 +13,20 @@ set(SOURCE_FILES
         include/dynamic_va_list.h)
 add_executable(UXP1A ${SOURCE_FILES})
 
-##Tests
-#find_package(GTest REQUIRED)
-#include_directories(${GTEST_INCLUDE_DIRS})
-#
-#set(TEST_FILES
+#Tests
+find_package(GTest REQUIRED)
+include_directories(${GTEST_INCLUDE_DIRS})
+
+set(TEST_FILES
 #        tests/linda_float_functional_tests.cc
 #        tests/linda_int_functional_tests.cc
 #        include/linda.c
 #        include/linda.h
-#        tests/linda_string_functional_tests.cc)
-#
-#add_executable(runTests
-#        ${TEST_FILES}
-#        )
-#
-#target_link_libraries(runTests ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES}  pthread)
+#        tests/linda_string_functional_tests.cc
+        tests/info_string_match_string_equals_test.cc)
+
+add_executable(runTests
+        ${TEST_FILES}
+        )
+
+target_link_libraries(runTests ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES}  pthread)
