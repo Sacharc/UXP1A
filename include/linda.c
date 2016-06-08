@@ -9,6 +9,7 @@
 #define TUPLE_CONTENT_LENGTH 128
 #define TUPLE_COUNT 128
 #define INFO_STRING_PARAM_NOT_RECOGNIZED "Info string parameter not recognized"
+#define MATCH_STRING_PARAM_NOT_RECOGNIZED "Match string parameter not recognized"
 #define OPERATOR_NOT_REGOGNIZED "Operator not recognized"
 #define FTOK_PATH "/tmp"
 #define OPERATOR_FIRST_CHARACTER_INDEX 1
@@ -102,14 +103,26 @@ int linda_end(int segment_id)
 
 bool linda_output(char * info_string, ...)
 {
+    va_list vl;
+    va_start(info_string, vl);
+    bool ret = vlinda_output(info_string, vl);
+    va_end(vl);
+
+    return ret;
+}
+
+bool vlinda_output(char * info_string, va_list v_init)
+{
 
     //TODO exctract method with validation
     const size_t info_string_length = strlen(info_string);
 
     size_t input_tuple_length = info_string_length + 1;
 
-    va_list v_init;
-    va_start(v_init, info_string);
+    va_list vl;
+    va_copy(vl, v_init);
+//    va_list v_init;
+//    va_start(v_init, info_string);
     size_t info_string_position = 0;
     while (info_string[info_string_position] != 0)
     {
@@ -146,7 +159,7 @@ bool linda_output(char * info_string, ...)
         }
         ++info_string_position;
     }
-    va_end(v_init);
+//    va_end(v_init);
 
     //Powiększyć przestrzeń w linda_memory o kolejną krotkę (+ zwiększyć licznik)
     //Zdobyć wskaźnik tuple * CurrentTuple na świeżo zaalokowaną krotkę
@@ -163,8 +176,8 @@ bool linda_output(char * info_string, ...)
     //Wrzucamy dane do pamięci
 
     //data to tuple
-    va_list vl;
-    va_start(vl, info_string);
+//    va_list vl;
+//    va_start(vl, info_string);
     info_string_position = 0;
     while(info_string[info_string_position] != 0)
     {
@@ -194,76 +207,70 @@ bool linda_output(char * info_string, ...)
 
         ++info_string_position;
     }
-    va_end(vl);
+//    va_end(vl);
 
     return true;
 }
 
 
 
+//INPUT FUNCTIONS
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-bool compare_string(const char * operator, const char * string_a, const char * string_b)
+bool compare_string(const char * operator_, const char * string_a, const char * string_b)
 {
-    if(strcmp(operator, "==") == 0)
+    if(strcmp(operator_, "==") == 0)
         return strcmp(string_a, string_b) == 0;
-    if(strcmp(operator, ">=") == 0)
+    if(strcmp(operator_, ">=") == 0)
         return strcmp(string_a, string_b) >= 0;
-    if (strcmp(operator, "<=") == 0)
+    if (strcmp(operator_, "<=") == 0)
         return strcmp(string_a, string_b) <= 0;
-    if (strcmp(operator, ">") == 0)
+    if (strcmp(operator_, ">") == 0)
         return strcmp(string_a, string_b) > 0;
-    if (strcmp(operator, "<") == 0)
+    if (strcmp(operator_, "<") == 0)
         return strcmp(string_a, string_b) < 0;
 
     perror("Operator comparison error");
     return false;
 }
+
 bool compare_int(const char * operator, int a, int b)
 {
-    //TODO
+    if(strcmp(operator, "==") == 0)
+        return a == b;
+    if(strcmp(operator, ">=") == 0)
+        return a >= b;
+    if (strcmp(operator, "<=") == 0)
+        return a <= b;
+    if (strcmp(operator, ">") == 0)
+        return a > b;
+    if (strcmp(operator, "<") == 0)
+        return a < b;
+
+    perror("Operator comparison error");
+    return false;
 }
+
 bool compare_double(const char * operator, double a, double b)
 {
-    //TODO
+    if(strcmp(operator, "==") == 0)
+    {
+        perror("Cant perform equal for float");
+        return false;
+    }
+    if(strcmp(operator, ">=") == 0)
+        return a >= b;
+    if (strcmp(operator, "<=") == 0)
+        return a <= b;
+    if (strcmp(operator, ">") == 0)
+        return a > b;
+    if (strcmp(operator, "<") == 0)
+        return a < b;
+
+    perror("Operator comparison error");
+    return false;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /**
 		Sprawdza, czy info_string i match_string definiują taką samą krotkę
@@ -344,15 +351,94 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
             {
                 case 'i':
                 {
-                    //0. Wyciągnąć operator
-                    //1. wyciągnąć int z tuple_to_match[tuple_to_match_position]
-                    //2. wyciągnąć int z tekstu za operatorem
-                    //3. Jeśli nie udało się compare_int - zwrócić false
+                    char operator_[2];
+                    int start_int_position;
+
+                    //Jesli jest to operator zlozony typu <= , >= , ==
+                    //Else jesli operator prosty typu < , >
+                    if (current_match_string_token[2] == '=')
+                    {
+                        strncpy(operator_, &current_match_string_token[1], 2);
+                        start_int_position = 3;
+                    }
+                    else
+                    {
+                        strncpy(operator_, &current_match_string_token[1], 1);
+                        start_int_position = 2;
+                    }
+
+                    int match_string_int;
+                    memcpy(&match_string_int, &current_match_string_token[start_int_position], sizeof(int));
+
+                    int tuple_to_match_int;
+                    memcpy(&tuple_to_match_int, &tuple_to_match[tuple_to_match_position], sizeof(int));
+
+                    if (!compare_int(operator_, match_string_int, tuple_to_match_int)) {
+                        return false;
+                    }
+                    break;
+                }
+                case 'f':
+                {
+                    char operator_[2];
+
+                    int start_double_position;
+                    if (current_match_string_token[2] == '=')
+                    {
+                        strncpy(operator_, &current_match_string_token[1], 2);
+                        start_double_position = 3;
+                    }
+                    else
+                    {
+                        strncpy(operator_, &current_match_string_token[1], 1);
+                        start_double_position = 2;
+                    }
+
+                    double match_string_double;
+                    memcpy(&match_string_double, &current_match_string_token[start_double_position], sizeof(double));
+
+                    double tuple_to_match_double;
+                    memcpy(&tuple_to_match_double, &tuple_to_match[tuple_to_match_position], sizeof(double));
+
+                    if (!compare_double(operator_, match_string_double, tuple_to_match_double)) {
+                        return false;
+                    }
+                    break;
+                }
+                case 's':
+                {
+                    char operator_[2];
+
+                    int start_string_position;
+                    if (current_match_string_token[2] == '=')
+                    {
+                        strncpy(operator_, &current_match_string_token[1], 2);
+                        start_string_position = 3;
+                    }
+                    else
+                    {
+                        strncpy(operator_, &current_match_string_token[1], 1);
+                        start_string_position = 2;
+                    }
+
+                    char match_string_string[TUPLE_CONTENT_LENGTH];
+                    memcpy(match_string_string, &current_match_string_token[start_string_position], current_match_string_token_length - start_string_position);
+
+                    char tuple_to_match_string[TUPLE_CONTENT_LENGTH];
+                    memcpy(&tuple_to_match_string, &tuple_to_match[tuple_to_match_position], current_match_string_token_length - start_string_position);
+
+                    if (!compare_string(operator_, match_string_string, tuple_to_match_string)) {
+                        return false;
+                    }
+                    break;
+                }
+                default:
+                {
+                    perror(MATCH_STRING_PARAM_NOT_RECOGNIZED);
                     break;
                 }
             }
         }
-
 
         //Czy to koniec napisu? Jeśli wcześniej nie wyszliśmy - zwracamy true
         if(*current_match_string_token_end == NULL)
@@ -369,11 +455,12 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 int extract_tuple_from_shmem(const char * match_string)
 {
     unsigned int tuple_id = 0;
-    for(;;)
+    while(tuple_id < linda_memory->tuple_count)
     {
         struct tuple * tuple_to_match = &linda_memory->first_tuple[tuple_id];
         if(tuple_match_match_string(tuple_to_match, match_string))
             return tuple_id;
+        ++tuple_id;
     }
 
     return -1;

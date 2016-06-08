@@ -422,7 +422,7 @@ int output(char *line, size_t line_length)
 
 
 
-//    vlinda_output(info_string, args._valist);
+    vlinda_output(info_string, args._va_list);
 
     dynamic_va_end(&args);
     return 0;
