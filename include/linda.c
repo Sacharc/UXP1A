@@ -141,7 +141,6 @@ bool linda_output(char * info_string, ...)
 
     //Powiększyć przestrzeń w linda_memory o kolejną krotkę (+ zwiększyć licznik)
     //Zdobyć wskaźnik tuple * CurrentTuple na świeżo zaalokowaną krotkę
-    int segment_id = linda_init();
 
     //3.
     size_t current_tuple_position = 0;
@@ -188,11 +187,10 @@ bool linda_output(char * info_string, ...)
     }
     va_end(vl);
 
-
-    linda_end(segment_id);
-
     return true;
 }
+
+//Read tuple functions
 
 char* strdup(const char* p)
 {
