@@ -546,6 +546,7 @@ bool vlinda_input(int timeout, char* match_string, va_list vl)
 
     //Kopiuje wszystkie krotki za wyciąganą o jedno miejsce do tyłu. Zmniejsza licznik krotek
     memcpy(&linda_memory->first_tuple[tuple_index], &linda_memory->first_tuple[tuple_index + 1], (--linda_memory->tuple_count - tuple_index) * sizeof(struct tuple));
+    return true;
 }
 
 bool vlinda_read(int timeout, char* match_string, va_list vl)
