@@ -18,11 +18,11 @@ find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
 set(TEST_FILES
-#        tests/linda_float_functional_tests.cc
-#        tests/linda_int_functional_tests.cc
+        tests/linda_float_functional_tests.cc
+        tests/linda_int_functional_tests.cc
 #        include/linda.c
 #        include/linda.h
-#        tests/linda_string_functional_tests.cc
+        tests/linda_string_functional_tests.cc
         tests/info_string_match_string_equals_test.cc)
 
 add_executable(runTests
