@@ -2,7 +2,8 @@
 #include <gtest/gtest.h>
 #include "../include/linda.h"
 
-TEST(Functional_String_Test, anyString) {
+TEST(Functional_String_Test, any_string)
+{
     linda_init();
     EXPECT_TRUE(linda_output("s", "test"));
     char* value;
@@ -11,14 +12,16 @@ TEST(Functional_String_Test, anyString) {
     linda_end();
 }
 
-TEST(Functional_String_Test, anyStringNeg) {
+TEST(Functional_String_Test, any_string_neg)
+{
     linda_init();
     char* value;
     EXPECT_FALSE(linda_input(1, "s", &value));
     linda_end();
 }
 
-TEST(Functional_String_Test, anyStringNeg1) {
+TEST(Functional_String_Test, any_string_neg1)
+{
     linda_init();
     EXPECT_TRUE(linda_output("f", 0.0));
     char* value;
@@ -26,7 +29,8 @@ TEST(Functional_String_Test, anyStringNeg1) {
     linda_end();
 }
 
-TEST(Functional_String_Test, anyStringNeg2) {
+TEST(Functional_String_Test, any_string_neg2)
+{
     linda_init();
     EXPECT_TRUE(linda_output("i", 0));
     char* value;
@@ -34,7 +38,8 @@ TEST(Functional_String_Test, anyStringNeg2) {
     linda_end();
 }
 
-TEST(Functional_String_Test, less_test) {
+TEST(Functional_String_Test, less_test)
+{
     linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
     char* value;
@@ -43,7 +48,8 @@ TEST(Functional_String_Test, less_test) {
     linda_end();
 }
 
-TEST(Functional_String_Test, less_test_neg) {
+TEST(Functional_String_Test, less_test_neg)
+{
     linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
     char* value;
@@ -51,7 +57,8 @@ TEST(Functional_String_Test, less_test_neg) {
     linda_end();
 }
 
-TEST(Functional_String_Test, less_eq_test1) {
+TEST(Functional_String_Test, less_eq_test1)
+{
     linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
     char* value;
@@ -60,7 +67,8 @@ TEST(Functional_String_Test, less_eq_test1) {
     linda_end();
 }
 
-TEST(Functional_String_Test, less_eq_test2) {
+TEST(Functional_String_Test, less_eq_test2)
+{
     linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
     char* value;
@@ -69,7 +77,8 @@ TEST(Functional_String_Test, less_eq_test2) {
     linda_end();
 }
 
-TEST(Functional_String_Test, less_eq_test_neg) {
+TEST(Functional_String_Test, less_eq_test_neg)
+{
     linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
     char* value;
@@ -77,7 +86,8 @@ TEST(Functional_String_Test, less_eq_test_neg) {
     linda_end();
 }
 
-TEST(Functional_String_Test, greater_test) {
+TEST(Functional_String_Test, greater_test)
+{
     linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
     char* value;
@@ -86,7 +96,8 @@ TEST(Functional_String_Test, greater_test) {
     linda_end();
 }
 
-TEST(Functional_String_Test, greater_test_neg) {
+TEST(Functional_String_Test, greater_test_neg)
+{
     linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
     char* value;
@@ -94,7 +105,8 @@ TEST(Functional_String_Test, greater_test_neg) {
     linda_end();
 }
 
-TEST(Functional_String_Test, greater_eq_test1) {
+TEST(Functional_String_Test, greater_eq_test1)
+{
     linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
     char* value;
@@ -103,7 +115,8 @@ TEST(Functional_String_Test, greater_eq_test1) {
     linda_end();
 }
 
-TEST(Functional_String_Test, greater_eq_test2) {
+TEST(Functional_String_Test, greater_eq_test2)
+{
     linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
     char* value;
@@ -112,7 +125,8 @@ TEST(Functional_String_Test, greater_eq_test2) {
     linda_end();
 }
 
-TEST(Functional_String_Test, greater_eq_test_neg) {
+TEST(Functional_String_Test, greater_eq_test_neg)
+{
     linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
     char* value;
@@ -120,7 +134,8 @@ TEST(Functional_String_Test, greater_eq_test_neg) {
     linda_end();
 }
 
-TEST(Functional_String_Test, eq_test) {
+TEST(Functional_String_Test, eq_test)
+{
     linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
     char* value;
@@ -129,7 +144,8 @@ TEST(Functional_String_Test, eq_test) {
     linda_end();
 }
 
-TEST(Functional_String_Test, eq_test_neg) {
+TEST(Functional_String_Test, eq_test_neg)
+{
     linda_init();
     EXPECT_TRUE(linda_output("s", "b"));
     char* value;

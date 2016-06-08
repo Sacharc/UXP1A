@@ -2,7 +2,8 @@
 #include <gtest/gtest.h>
 #include "../include/linda.h"
 
-TEST(Functional_Int_Test, anyInt) {
+TEST(Functional_Int_Test, any_int)
+{
     linda_init();
     EXPECT_TRUE(linda_output("i", 0));
     int value;
@@ -11,14 +12,16 @@ TEST(Functional_Int_Test, anyInt) {
     linda_end();
 }
 
-TEST(Functional_Int_Test, anyIntNeg) {
+TEST(Functional_Int_Test, any_int_neg)
+{
     linda_init();
     int value;
     EXPECT_FALSE(linda_input(1, "i", &value));
     linda_end();
 }
 
-TEST(Functional_Int_Test, anyIntNeg1) {
+TEST(Functional_Int_Test, any_int_neg1)
+{
     linda_init();
     EXPECT_TRUE(linda_output("f", 0.0));
     int value;
@@ -26,7 +29,8 @@ TEST(Functional_Int_Test, anyIntNeg1) {
     linda_end();
 }
 
-TEST(Functional_Int_Test, anyIntNeg2) {
+TEST(Functional_Int_Test, any_int_neg2)
+{
     linda_init();
     EXPECT_TRUE(linda_output("s", "test"));
     int value;
@@ -34,7 +38,8 @@ TEST(Functional_Int_Test, anyIntNeg2) {
     linda_end();
 }
 
-TEST(Functional_Int_Test, less_test) {
+TEST(Functional_Int_Test, less_test)
+{
     linda_init();
     EXPECT_TRUE(linda_output("i", 0));
     int value;
@@ -43,7 +48,8 @@ TEST(Functional_Int_Test, less_test) {
     linda_end();
 }
 
-TEST(Functional_Int_Test, less_test_neg) {
+TEST(Functional_Int_Test, less_test_neg)
+{
     linda_init();
     EXPECT_TRUE(linda_output("i", 1));
     int value;
@@ -51,7 +57,8 @@ TEST(Functional_Int_Test, less_test_neg) {
     linda_end();
 }
 
-TEST(Functional_Int_Test, less_eq_test1) {
+TEST(Functional_Int_Test, less_eq_test1)
+{
     linda_init();
     EXPECT_TRUE(linda_output("i", 0));
     int value;
@@ -60,7 +67,8 @@ TEST(Functional_Int_Test, less_eq_test1) {
     linda_end();
 }
 
-TEST(Functional_Int_Test, less_eq_test2) {
+TEST(Functional_Int_Test, less_eq_test2)
+{
     linda_init();
     EXPECT_TRUE(linda_output("i", 0));
     int value;
@@ -69,7 +77,8 @@ TEST(Functional_Int_Test, less_eq_test2) {
     linda_end();
 }
 
-TEST(Functional_Int_Test, less_eq_test_neg) {
+TEST(Functional_Int_Test, less_eq_test_neg)
+{
     linda_init();
     EXPECT_TRUE(linda_output("i", 1));
     int value;
@@ -77,7 +86,8 @@ TEST(Functional_Int_Test, less_eq_test_neg) {
     linda_end();
 }
 
-TEST(Functional_Int_Test, greater_test) {
+TEST(Functional_Int_Test, greater_test)
+{
     linda_init();
     EXPECT_TRUE(linda_output("i", 3));
     int value;
@@ -86,7 +96,8 @@ TEST(Functional_Int_Test, greater_test) {
     linda_end();
 }
 
-TEST(Functional_Int_Test, greater_test_neg) {
+TEST(Functional_Int_Test, greater_test_neg)
+{
     linda_init();
     EXPECT_TRUE(linda_output("i", 1));
     int value;
@@ -94,7 +105,8 @@ TEST(Functional_Int_Test, greater_test_neg) {
     linda_end();
 }
 
-TEST(Functional_Int_Test, greater_eq_test1) {
+TEST(Functional_Int_Test, greater_eq_test1)
+{
     linda_init();
     EXPECT_TRUE(linda_output("i", 3));
     int value;
@@ -103,7 +115,8 @@ TEST(Functional_Int_Test, greater_eq_test1) {
     linda_end();
 }
 
-TEST(Functional_Int_Test, greater_eq_test2) {
+TEST(Functional_Int_Test, greater_eq_test2)
+{
     linda_init();
     EXPECT_TRUE(linda_output("i", 3));
     int value;
@@ -112,7 +125,8 @@ TEST(Functional_Int_Test, greater_eq_test2) {
     linda_end();
 }
 
-TEST(Functional_Int_Test, greater_eq_test_neg) {
+TEST(Functional_Int_Test, greater_eq_test_neg)
+{
     linda_init();
     EXPECT_TRUE(linda_output("i", 1));
     int value;
@@ -120,7 +134,8 @@ TEST(Functional_Int_Test, greater_eq_test_neg) {
     linda_end();
 }
 
-TEST(Functional_Int_Test, eq_test) {
+TEST(Functional_Int_Test, eq_test)
+{
     linda_init();
     EXPECT_TRUE(linda_output("i", 3));
     int value;
@@ -129,7 +144,8 @@ TEST(Functional_Int_Test, eq_test) {
     linda_end();
 }
 
-TEST(Functional_Int_Test, eq_test_neg) {
+TEST(Functional_Int_Test, eq_test_neg)
+{
     linda_init();
     EXPECT_TRUE(linda_output("i", 1));
     int value;
