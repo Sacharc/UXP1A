@@ -8,7 +8,7 @@
 
 #include "include/dynamic_va_list.h"
 
-static char noLogging = 0;
+extern bool linda_logging;
 
 static int parse_opt(int key, char *arg, struct argp_state *state)
 {
@@ -16,14 +16,14 @@ static int parse_opt(int key, char *arg, struct argp_state *state)
     {
         case 'n':
         {
-            noLogging = 1;
+            linda_logging = false;
             break;
         }
     }
     return 0;
 }
 
-int input(char *line, size_t line_length, bool (*)(int, char*, va_list));
+int input(char *line, size_t line_length, bool (*)(int, const char*, va_list*));
 
 int output(char *line, size_t line_length);
 
@@ -55,8 +55,12 @@ int main(int argc, char **argv)
     struct argp argp = {options, parse_opt, 0, 0};
     argp_parse(&argp, argc, argv, 0, 0, 0);
 
-
-    int segment_id = linda_init();
+    bool success = linda_init();
+    if (!success)
+    {
+        printf("Could not initialize linda.\n");
+        return 1;
+    }
 
     char *raw_line = NULL;
     size_t length = 0;
@@ -116,7 +120,7 @@ int main(int argc, char **argv)
     }
 
     free(raw_line);
-    linda_end(segment_id);
+    linda_end();
 }
 
 
@@ -132,7 +136,7 @@ int main(int argc, char **argv)
 #define ERR_NO_TIMEOUT 10
 #define ERR_NOT_FOUND 11
 
-int input(char *line, size_t line_length, bool (*input_function)(int, char*, va_list))
+int input(char *line, size_t line_length, bool (*input_function)(int, const char*, va_list*))
 {
     char *match_string = strtok(NULL, " \t");
 
@@ -220,10 +224,10 @@ int input(char *line, size_t line_length, bool (*input_function)(int, char*, va_
                     return ERR_WRONG_MATCH_STRING;
                 }
                 strcat(types, "f");
-                input = (char *) realloc(input, offset + sizeof(float *));
-                float *floating_point = (float *) malloc(sizeof(float));
-                *((float **) (input + offset)) = floating_point;
-                offset += sizeof(float *);
+                input = (char *) realloc(input, offset + sizeof(double *));
+                double *floating_point = (double *) malloc(sizeof(double));
+                *((double **) (input + offset)) = floating_point;
+                offset += sizeof(double *);
                 break;
             }
             case 's':
@@ -257,7 +261,7 @@ int input(char *line, size_t line_length, bool (*input_function)(int, char*, va_
     dynamic_va_start(&va_list_linda, input);
 
 
-    bool found = (*input_function)(timeout, match_string, va_list_linda._va_list);
+    bool found = (*input_function)(timeout, match_string, &va_list_linda._va_list);
     if(!found) {
         free_input_content(input, types);
         dynamic_va_end(&va_list_linda);
@@ -296,7 +300,7 @@ int input(char *line, size_t line_length, bool (*input_function)(int, char*, va_
                 break;
             case 'f':
                 output = (char *) realloc(output, offset + VLIST_CHUNK_SIZE);
-                *((float *) (output + offset)) = **((float **) (input + offset));
+                *((double *) (output + offset)) = **((double **) (input + offset));
                 offset += VLIST_CHUNK_SIZE;
                 break;
             case 's':
@@ -392,13 +396,13 @@ int output(char *line, size_t line_length)
                 }
 
                 char *end;
-                float floating_point = strtof(variable, &end);
+                double floating_point = strtof(variable, &end);
                 if (*end != '\0')
                 {
                     free(output);
                     return ERR_FLOAT_PARSE;
                 }
-                *(float *) current_place = floating_point;
+                *(double *) current_place = floating_point;
                 current_place += VLIST_CHUNK_SIZE;
                 break;
             }
@@ -419,7 +423,7 @@ int output(char *line, size_t line_length)
     dynamic_va_list args;
     dynamic_va_start(&args, output);
 
-    vlinda_output(info_string, args._va_list);
+    vlinda_output(info_string, &args._va_list);
 
     dynamic_va_end(&args);
     return 0;
@@ -689,8 +693,8 @@ void free_input_content(char *input, char *types)
                 current_place += sizeof(int *);
                 break;
             case 'f':
-                free(*((float **) current_place));
-                current_place += sizeof(float *);
+                free(*((double **) current_place));
+                current_place += sizeof(double *);
                 break;
             case 's':
                 free(*((char **) current_place));
