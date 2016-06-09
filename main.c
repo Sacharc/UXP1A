@@ -69,7 +69,7 @@ int main(int argc, char **argv)
     int status;
     while (1)
     {
-        printf(">");
+        printf("> ");
 
         __ssize_t bytesRead = getline(&raw_line, &length, stdin);
         if (bytesRead == -1)
@@ -180,6 +180,7 @@ int input(char *line, size_t line_length, bool (*input_function)(struct timeval,
             return ERR_UNRECOGNIZED_OPT;
         }
     }
+	printf("Timeout: %d\n", timeout);
     struct timeval t = {timeout, 0};
 
     char *input = NULL;
