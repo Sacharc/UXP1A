@@ -81,7 +81,7 @@ bool linda_init()
 		return false;
 	}
 
-  //Init tuple_count, if it's first process
+	//Init tuple_count, if it's first process
 	if(shm_data.shm_nattch == 1)
 	{
 		printf("-> Initializing!\n");
@@ -118,11 +118,18 @@ void linda_end()
 			syslog(3, "IPC error: shmctl(): %d", errno);
 		}
 	}
+	
+	
+	//Czy usunąć pamięć po zakończeniu dealokacji?
+	bool remove_shmem = false;
+	
 	if(shm_data.shm_nattch == 1)
 	{
 		printf("-> Cleaning up!\n");
 		pthread_cond_destroy(&linda_memory->output_cond);
 		pthread_mutex_destroy(&linda_memory->mem_mutex);
+		
+		remove_shmem = true;
 	}
 	
 	/* Detach the shared memory segment.  */
@@ -136,12 +143,15 @@ void linda_end()
 	}
 
 	// Deallocate the shared memory segment.
-	if(shmctl(linda_segment_id, IPC_RMID, NULL) == -1)
+	if(remove_shmem)
 	{
-		printf("IPC error shmctl(). Cannot deallocate shared memory.");
-		if (linda_logging)
+		if(shmctl(linda_segment_id, IPC_RMID, NULL) == -1)
 		{
-			syslog(3, "IPC error shmctl(). Cannot deallocate shared memory.");
+			printf("IPC error shmctl(). Cannot deallocate shared memory.");
+			if (linda_logging)
+			{
+				syslog(3, "IPC error shmctl(). Cannot deallocate shared memory.");
+			}
 		}
 	}
 	closelog();
@@ -203,6 +213,7 @@ bool vlinda_output(const char * info_string, va_list * v_init)
 	
 	if(inserted)
 	{
+		printf("Calling pthread_cond_broadcast()\n");
 		if(pthread_cond_broadcast(&linda_memory->output_cond) != 0)
 		{
 			printf("pthread_cond_broadcast(): %d", errno);
@@ -610,7 +621,7 @@ int extract_tuple_from_shmem(const char * match_string)
 	return -1;
 }
 
-bool vlinda_in_generic(bool to_remove, int timeout, const char * match_string, va_list * v_init)
+bool vlinda_in_generic(bool to_remove, struct timeval timeout, const char * match_string, va_list * v_init)
 {
 	if(pthread_mutex_lock(&linda_memory->mem_mutex) != 0)
 	{
@@ -628,21 +639,41 @@ bool vlinda_in_generic(bool to_remove, int timeout, const char * match_string, v
 	
 	return result;
 }
-bool vlinda_in_generic_unsafe(bool to_remove, int timeout, const char * match_string, va_list * v_init)
+bool vlinda_in_generic_unsafe(bool to_remove, struct timeval timeout, const char * match_string, va_list * v_init)
 {
 	int tuple_index = -1;
 	
+	//Czas teraz
 	struct timeval now;
 	gettimeofday(&now, NULL);
 	
-	
-	struct timeval timeout_timeval; //Po tym timestampie poddajemy się z szukaniem
+	//Timestamp zakończenia oczekiwania
+	struct timeval timeout_end_timeval; //Po tym timestampie poddajemy się z szukaniem
+	timeradd(&now, &timeout, &timeout_end_timeval);
 	
 	while(true)
 	{
+		//Sprawdzamy, czy udało się wyjąć krotkę
 		tuple_index = extract_tuple_from_shmem(match_string);
 		if(tuple_index != -1)
 			break;
+		
+		//Jeśli się nie udało - czekamy. Jeśli wybije timeout - rezygnujemy
+		struct timespec timeout_timespec = {timeout_end_timeval.tv_sec, timeout_end_timeval.tv_usec * 1000};
+		int wait_result = pthread_cond_timedwait(&linda_memory->output_cond, &linda_memory->mem_mutex, &timeout_timespec);
+		if(wait_result != 0)
+		{
+			if(wait_result == ETIMEDOUT)
+			{
+				printf("pthread_cond_timedwait timeout\n");
+				break;
+			}
+			
+			printf("pthread_cond_timedwait(): %d\n", wait_result);
+			return false;
+		}
+		
+		printf("pthread_cond_timedwait() finished\n");
 	}
 
 	if (tuple_index == -1)
@@ -711,7 +742,7 @@ bool vlinda_in_generic_unsafe(bool to_remove, int timeout, const char * match_st
 }
 
 
-bool linda_input(int timeout, const char * match_string, ...)
+bool linda_input(struct timeval timeout, const char * match_string, ...)
 {
 	va_list v_init;
 	va_start(v_init, match_string);
@@ -722,12 +753,12 @@ bool linda_input(int timeout, const char * match_string, ...)
 	return ret;
 }
 
-bool vlinda_input(int timeout, const char * match_string, va_list * v_init)
+bool vlinda_input(struct timeval timeout, const char * match_string, va_list * v_init)
 {
 	return vlinda_in_generic(true, timeout, match_string, v_init);
 }
 
-bool linda_read(int timeout, const char * match_string, ...)
+bool linda_read(struct timeval timeout, const char * match_string, ...)
 {
 	va_list v_init;
 	va_start(v_init, match_string);
@@ -738,7 +769,7 @@ bool linda_read(int timeout, const char * match_string, ...)
 	return ret;
 }
 
-bool vlinda_read(int timeout, const char * match_string, va_list * v_init)
+bool vlinda_read(struct timeval timeout, const char * match_string, va_list * v_init)
 {
 	return vlinda_in_generic(false, timeout, match_string, v_init);
 }

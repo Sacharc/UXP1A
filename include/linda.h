@@ -76,8 +76,8 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 
 int extract_tuple_from_shmem(const char * match_string);
 
-bool vlinda_in_generic(bool to_remove, int timeout, const char * match_string, va_list * v_init);
-bool vlinda_in_generic_unsafe(bool to_remove, int timeout, const char * match_string, va_list * v_init);
+bool vlinda_in_generic(bool to_remove, struct timeval timeout, const char * match_string, va_list * v_init);
+bool vlinda_in_generic_unsafe(bool to_remove, struct timeval timeout, const char * match_string, va_list * v_init);
 
 /*
  * Search for tuple matched with match_string, and assign values for arguments in va_list
@@ -85,8 +85,8 @@ bool vlinda_in_generic_unsafe(bool to_remove, int timeout, const char * match_st
  * Working similar to scanf
  * Return true if success, false if error
  */
-bool linda_input(int timeout, const char * match_string, ...);
-bool vlinda_input(int timeout, const char * match_string, va_list * v_init);
+bool linda_input(struct timeval timeout, const char * match_string, ...);
+bool vlinda_input(struct timeval timeout, const char * match_string, va_list * v_init);
 
 /*
  * Search for tuple matched with match_string, and assign values for arguments in va_list
@@ -94,8 +94,8 @@ bool vlinda_input(int timeout, const char * match_string, va_list * v_init);
  * Working similar to scanf
  * Return true if success, false if error
  */
-bool linda_read(int timeout, const char * match_string, ...);
-bool vlinda_read(int timeout, const char * match_string, va_list * v_init);
+bool linda_read(struct timeval timeout, const char * match_string, ...);
+bool vlinda_read(struct timeval timeout, const char * match_string, va_list * v_init);
 
 
 #endif //TEST_LINDA_H
