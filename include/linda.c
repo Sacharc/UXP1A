@@ -13,7 +13,7 @@
 
 #define FTOK_PATH "/tmp"
 
-bool linda_logging = true;
+bool linda_logging = false;
 
 /*
 * Pointer to mem structure
@@ -30,7 +30,10 @@ bool linda_init()
 {
 	//Create virtual memory key
 	key_t key = ftok(FTOK_PATH, 1);
-	openlog("linda", LOG_PID, 0);
+	
+	if (linda_logging)
+		openlog("linda", LOG_PID, 0);
+	
 	if(key == (key_t) -1)
 	{
 		printf("IPC error: ftok: %d", errno);
@@ -154,7 +157,9 @@ void linda_end()
 			}
 		}
 	}
-	closelog();
+	
+	if(linda_logging)
+		closelog();
 }
 
 /*
