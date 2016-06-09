@@ -8,39 +8,6 @@
 #include <gtest/gtest.h>
 
 bool info_string_match_string_equals(const char * info_string, const char * match_string);
-//{
-//    size_t info_string_position = 0;
-//    size_t match_string_position = 0;
-//
-//    for(;;)
-//    {
-//        //Jeśli znaki nie są identyczne
-//        if(info_string[info_string_position] != match_string[match_string_position])
-//            return false;
-//
-//        //Jeśli oba się kończą (to w zasadzie ma sens tylko dla pierwszego znaku)
-//        if(info_string[info_string_position] == NULL)
-//            return true;
-//
-//        //Przesuwamy iterator info_string o jeden znak do przodu
-//        info_string_position++;
-//
-//        //Przesuwamy iterator match_string na znak po przecinku (albo null)
-//        for(;;)
-//        {
-//            if(match_string[match_string_position] == ',' || match_string[match_string_position] == NULL)
-//                break;
-//            match_string_position++;
-//        }
-//
-//        //Jeśli match-string się skończył - sprawdzamy czy info_string też się skończył
-//        if(match_string[match_string_position] == NULL)
-//            return info_string[info_string_position] == NULL;
-//
-//        //Nie - jesteśmy na przecinku, przesuwamy się za niego
-//        match_string_position++;
-//    }
-//}
 
 TEST(info_string_match_string_equals_test, test1)
 {

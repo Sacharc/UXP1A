@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include "include/linda.h"
 
 #include "include/dynamic_va_list.h"
@@ -23,7 +24,7 @@ static int parse_opt(int key, char *arg, struct argp_state *state)
     return 0;
 }
 
-int input(char *line, size_t line_length, bool (*)(int, const char*, va_list*));
+int input(char *line, size_t line_length, bool (*)(struct timeval, const char*, va_list*));
 
 int output(char *line, size_t line_length);
 
@@ -136,7 +137,7 @@ int main(int argc, char **argv)
 #define ERR_NO_TIMEOUT 10
 #define ERR_NOT_FOUND 11
 
-int input(char *line, size_t line_length, bool (*input_function)(int, const char*, va_list*))
+int input(char *line, size_t line_length, bool (*input_function)(struct timeval, const char*, va_list*))
 {
     char *match_string = strtok(NULL, " \t");
 
@@ -179,6 +180,7 @@ int input(char *line, size_t line_length, bool (*input_function)(int, const char
             return ERR_UNRECOGNIZED_OPT;
         }
     }
+    struct timeval t = {timeout, 0};
 
     char *input = NULL;
     size_t offset = 0;
@@ -261,7 +263,7 @@ int input(char *line, size_t line_length, bool (*input_function)(int, const char
     dynamic_va_start(&va_list_linda, input);
 
 
-    bool found = (*input_function)(timeout, match_string, &va_list_linda._va_list);
+    bool found = (*input_function)(t, match_string, &va_list_linda._va_list);
     if(!found) {
         free_input_content(input, types);
         dynamic_va_end(&va_list_linda);
