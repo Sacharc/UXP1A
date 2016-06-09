@@ -248,7 +248,7 @@ int input(char *line, size_t line_length, bool (*input_function)(struct timeval,
                 }
                 strcat(types, "s");
                 input = (char *) realloc(input, offset + sizeof(char **));
-                char *string = (char *) malloc(sizeof(char) * 100);
+                char *string = (char *) malloc(sizeof(char) * 128);
                 *((char **) (input + offset)) = string;
                 offset += sizeof(char *);
                 break;
