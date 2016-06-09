@@ -137,6 +137,10 @@ int main(int argc, char **argv)
 #define ERR_NO_TIMEOUT 10
 #define ERR_NOT_FOUND 11
 
+/*
+ * Reads tuple using linda and prints its content.
+ * Depending on what function had been passed as the third argument may remove tuple from memory.
+ */
 int input(char *line, size_t line_length, bool (*input_function)(struct timeval, const char*, va_list*))
 {
     char *match_string = strtok(NULL, " \t");
@@ -198,6 +202,7 @@ int input(char *line, size_t line_length, bool (*input_function)(struct timeval,
 
     char *type_string = strtok(match_string_copy, ",");
 
+    // Allocates sufficient memory to hold tuple elements.
     int error;
     while (1)
     {
@@ -273,7 +278,7 @@ int input(char *line, size_t line_length, bool (*input_function)(struct timeval,
 
     // Build format string for vprintf
 
-    //6 characters per every printed variable and 2 characters for new line and 0
+    //Format string takes 6 characters per every printed variable and 2 characters for new line and 0
     size_t format_string_length = match_string_length * 6 + 2;
     char printf_format_string[format_string_length];
     printf_format_string[0] = '\0';
@@ -326,6 +331,9 @@ int input(char *line, size_t line_length, bool (*input_function)(struct timeval,
     return 0;
 }
 
+/*
+ * Sends tuple to linda.
+ */
 int output(char *line, size_t line_length)
 {
     char *info_string = strtok(NULL, " \t");
@@ -352,6 +360,7 @@ int output(char *line, size_t line_length)
         }
     }
 
+    // Allocates memory for vlinda_output va_list
     char *output = malloc(output_size);
 
     void *current_place = output;
@@ -472,6 +481,10 @@ void print_error_message(int status)
     }
 }
 
+/*
+ * Gets first word from provided string.
+ * It returns pointer to start of the word and modifies string by changing first space after the word to '\0'.
+ */
 char *get_word(char *string)
 {
     size_t length = strlen(string);
@@ -504,6 +517,10 @@ char *get_word(char *string)
     return word_start;
 }
 
+/*
+ * Gets first sentence inside quotes.
+ * Returns pointer to the first letter of the first word and modifies string by changing the second found '"' to '\0'.
+ */
 char *get_words_inside_quotes(char *string)
 {
     size_t length = strlen(string);
@@ -550,6 +567,9 @@ char *get_words_inside_quotes(char *string)
     }
 }
 
+/*
+ * Checks if integer match string is valid.
+ */
 int check_integer_match_string(char *string)
 {
     size_t length = strlen(string);
@@ -578,6 +598,9 @@ int check_integer_match_string(char *string)
     return 0;
 }
 
+/*
+ * Checks if float match string is valid.
+ */
 int check_float_match_string(char *string)
 {
     size_t length = strlen(string);
@@ -605,6 +628,9 @@ int check_float_match_string(char *string)
     return 0;
 }
 
+/*
+ * Checks if match string for string is valid.
+ */
 int check_string_match_string(char *string)
 {
     size_t length = strlen(string);
@@ -626,6 +652,10 @@ int check_string_match_string(char *string)
     return 0;
 }
 
+/*
+ * Sets second argument so it points to the begining of number in match_string.
+ * If the match string is invalid it returns -1.
+ */
 int get_number_start(char *string, char **number_start)
 {
     size_t length = strlen(string);
@@ -683,6 +713,9 @@ int get_number_start(char *string, char **number_start)
     return 0;
 }
 
+/*
+ * Free memory referenced by pointers inside input.
+ */
 void free_input_content(char *input, char *types)
 {
     size_t length = strlen(types);
