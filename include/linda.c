@@ -353,7 +353,7 @@ bool compare_string(const char * operator_, const char * string_a, const char * 
 	if(strcmp(operator_, "<") == 0)
 		return strcmp(string_a, string_b) < 0;
 
-	printf("Operator comparison error");
+	printf("Operator comparison error: `%s`\n", operator_);
 	return false;
 }
 
@@ -378,7 +378,7 @@ bool compare_int(const char * operator_, int a, int b)
 	if(strcmp(operator_, "<") == 0)
 		return a < b;
 
-	printf("Operator comparison error");
+	printf("Operator comparison error: `%s`\n", operator_);
 	return false;
 }
 
@@ -406,7 +406,7 @@ bool compare_double(const char * operator_, double a, double b)
 	if(strcmp(operator_, "<") == 0)
 		return a < b;
 
-	printf("Operator comparison error");
+	printf("Operator comparison error: `%s`\n", operator_);
 	return false;
 }
 
@@ -665,15 +665,13 @@ bool vlinda_in_generic_unsafe(bool to_remove, struct timeval timeout, const char
 		{
 			if(wait_result == ETIMEDOUT)
 			{
-				printf("pthread_cond_timedwait timeout\n");
+				//printf("pthread_cond_timedwait timeout\n");
 				break;
 			}
 			
 			printf("pthread_cond_timedwait(): %d\n", wait_result);
 			return false;
 		}
-		
-		printf("pthread_cond_timedwait() finished\n");
 	}
 
 	if (tuple_index == -1)
