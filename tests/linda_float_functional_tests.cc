@@ -1,7 +1,6 @@
 
 #include <gtest/gtest.h>
-#include "../include/linda.c"
-#include "tests_constants.h"
+#include "tests.h"
 
 TEST(Functional_Float_Test, any_float)
 {

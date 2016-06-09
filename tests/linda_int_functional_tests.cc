@@ -1,7 +1,6 @@
 
 #include <gtest/gtest.h>
-#include "../include/linda.h"
-#include "tests_constants.h"
+#include "tests.h"
 
 TEST(Functional_Int_Test, any_int)
 {

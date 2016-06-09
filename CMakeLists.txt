@@ -6,7 +6,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 set(SOURCE_FILES
         include/linda.h
-        tests/test.c
         include/linda.c
         include/dynamic_va_list.h
         include/dynamic_va_list.h)
@@ -21,15 +20,16 @@ find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
 set(TEST_FILES
+        include/linda.c
+        include/linda.h
         tests/linda_float_functional_tests.cc
         tests/linda_int_functional_tests.cc
-#        include/linda.c
-#        include/linda.h
         tests/linda_string_functional_tests.cc
-        tests/info_string_match_string_equals_test.cc)
+        tests/info_string_match_string_equals_test.cc
+        tests/tests.h)
 
 add_executable(runTests
         ${TEST_FILES}
         )
 
-target_link_libraries(runTests ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES}  pthread)
+target_link_libraries(runTests ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES} pthread)

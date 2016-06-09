@@ -1,13 +1,10 @@
-//
-// Created by sacharc on 08.06.16.
-//
 
 /**
 		Sprawdza, czy info_string i match_string definiują taką samą krotkę
 */
 #include <gtest/gtest.h>
+#include "tests.h"
 
-bool info_string_match_string_equals(const char * info_string, const char * match_string);
 
 TEST(info_string_match_string_equals_test, test1)
 {
