@@ -39,7 +39,7 @@ bool linda_init()
 		printf("IPC error: ftok: %d", errno);
 		if(linda_logging)
 			syslog(3, "IPC error: ftok: %d", errno);
-		
+
 		closelog();
 		return false;
 	}
@@ -117,7 +117,7 @@ void linda_end()
 	}
 	
 	
-	//Czy usunąć pamięć po zakończeniu dealokacji?
+	//Remove memory after deallocation?
 	bool remove_shmem = false;
 	
 	if(shm_data.shm_nattch == 1)
@@ -212,7 +212,6 @@ bool vlinda_output(const char * info_string, va_list * v_init)
 	
 	if(inserted)
 	{
-		//printf("Calling pthread_cond_broadcast()\n");
 		if(pthread_cond_broadcast(&linda_memory->output_cond) != 0)
 		{
 			printf("pthread_cond_broadcast(): %d", errno);
@@ -488,7 +487,7 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 		return false;
 
 
-	size_t tuple_to_match_position = strlen(&tuple_to_match->tuple_content[0]) + 1; //pomijamy info_string
+	size_t tuple_to_match_position = strlen(&tuple_to_match->tuple_content[0]) + 1; //skip info_string
 
 	//Filters
 	//current_match_string_token_start points at first filter character
@@ -502,7 +501,7 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 
 		//We are looking for ',' or end of string.
 		const char * current_match_string_token_end = strchr(current_match_string_token_start, ',');
-		if(current_match_string_token_end == NULL) //Przecinka nie ma, jest koniec tekstu.
+		if(current_match_string_token_end == NULL) //No comma - end of a string
 			current_match_string_token_end = current_match_string_token_start + strlen(current_match_string_token_start);
 
 		//Length from start to end.
@@ -512,9 +511,8 @@ bool tuple_match_match_string(const struct tuple * tuple_to_match, const char * 
 		current_match_string_token[current_match_string_token_length] = 0;
 
 		current_match_string_token_start = current_match_string_token_end + 1;
-		
-		
-		//Jesli nie sprawdzamy - przesuwamy wskaźnik krotki do przodu
+
+		//If we are not checking - increment tuple pointer
 		if(current_match_string_token_length == 1)
 		{
 			switch(current_match_string_token[0])
@@ -647,25 +645,25 @@ bool vlinda_in_generic_unsafe(bool to_remove, struct timeval timeout, const char
 {
 	int tuple_index = -1;
 	
-	//Czas teraz
+	//Time now
 	struct timeval now;
 	gettimeofday(&now, NULL);
 	
-	//Timestamp zakończenia oczekiwania
-	struct timeval timeout_end_timeval; //Po tym timestampie poddajemy się z szukaniem
+	//Timestamp end of waiting
+	struct timeval timeout_end_timeval; //After that, its end of searching
 	timeradd(&now, &timeout, &timeout_end_timeval);
 	
 	while(true)
 	{
-		//Sprawdzamy, czy udało się wyjąć krotkę
+		//Check if matching tuple was found
 		tuple_index = extract_tuple_from_shmem(match_string);
 		if(tuple_index != -1)
 			break;
 		
-		//Jeśli się nie udało - czekamy. Jeśli wybije timeout - rezygnujemy
+		//If not - we are waiting, if timeout ends - we are not waiting anymore
 		time_t timeout_timespec_sec = timeout_end_timeval.tv_sec;
 		
-		//Poprawiamy zegar, żeby nie było więcej niż 10^9 nsec
+		//Modify clock, not more than 10^9 nsec
 		unsigned long timeout_timespec_nsec = timeout_end_timeval.tv_usec * 1000;
 		timeout_timespec_sec += (timeout_timespec_nsec / (1000 * 1000 * 1000));
 		timeout_timespec_nsec %= (1000 * 1000 * 1000);
@@ -676,7 +674,6 @@ bool vlinda_in_generic_unsafe(bool to_remove, struct timeval timeout, const char
 		{
 			if(wait_result == ETIMEDOUT)
 			{
-				//printf("pthread_cond_timedwait timeout\n");
 				break;
 			}
 			
@@ -689,7 +686,6 @@ bool vlinda_in_generic_unsafe(bool to_remove, struct timeval timeout, const char
 
 	if(tuple_index == -1)
 	{
-		//printf("Matched tuple not found\n");
 		return false;
 	}
 
