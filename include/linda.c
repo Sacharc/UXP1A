@@ -31,16 +31,15 @@ bool linda_init()
 	//Create virtual memory key
 	key_t key = ftok(FTOK_PATH, 1);
 	
-	if (linda_logging)
+	if(linda_logging)
 		openlog("linda", LOG_PID, 0);
 	
 	if(key == (key_t) -1)
 	{
 		printf("IPC error: ftok: %d", errno);
-		if (linda_logging)
-		{
+		if(linda_logging)
 			syslog(3, "IPC error: ftok: %d", errno);
-		}
+		
 		closelog();
 		return false;
 	}
@@ -50,23 +49,21 @@ bool linda_init()
 	if(linda_segment_id == -1)
 	{
 		printf("IPC error: shmget: %d", errno);
-		if (linda_logging)
-		{
+		if(linda_logging)
 			syslog(3, "IPC error: shmget: %d", errno);
-		}
+		
 		closelog();
 		return false;
 	}
 	
 	//Map shared memory to our VM
-	linda_memory = (struct mem*) shmat (linda_segment_id, NULL, 0);
+	linda_memory = (struct mem *) shmat (linda_segment_id, NULL, 0);
 	if(linda_memory == NULL)
 	{
 		printf("IPC error: linda_memory: %d", errno);
-		if (linda_logging)
-		{
+		if(linda_logging)
 			syslog(3, "IPC error: linda_memory: %d", errno);
-		}
+		
 		closelog();
 		return false;
 	}
@@ -76,10 +73,9 @@ bool linda_init()
 	if(shmctl(linda_segment_id, IPC_STAT, &shm_data) == -1)
 	{
 		printf("IPC error: shmctl(): %d", errno);
-		if (linda_logging)
-		{
+		if(linda_logging)
 			syslog(3, "IPC error: shmctl(): %d", errno);
-		}
+		
 		closelog();
 		return false;
 	}
@@ -116,10 +112,8 @@ void linda_end()
 	if(shmctl(linda_segment_id, IPC_STAT, &shm_data) == -1)
 	{
 		printf("IPC error: shmctl(): %d", errno);
-		if (linda_logging)
-		{
+		if(linda_logging)
 			syslog(3, "IPC error: shmctl(): %d", errno);
-		}
 	}
 	
 	
@@ -139,10 +133,8 @@ void linda_end()
 	if(shmdt(linda_memory) == -1)
 	{
 		printf("IPC error shmdt(). Cannot detach memory.");
-		if (linda_logging)
-		{
+		if(linda_logging)
 			syslog(3, "IPC error shmdt(). Cannot detach memory.");
-		}
 	}
 
 	// Deallocate the shared memory segment.
@@ -151,10 +143,8 @@ void linda_end()
 		if(shmctl(linda_segment_id, IPC_RMID, NULL) == -1)
 		{
 			printf("IPC error shmctl(). Cannot deallocate shared memory.");
-			if (linda_logging)
-			{
+			if(linda_logging)
 				syslog(3, "IPC error shmctl(). Cannot deallocate shared memory.");
-			}
 		}
 	}
 	
@@ -205,6 +195,8 @@ bool vlinda_output(const char * info_string, va_list * v_init)
 	if(pthread_mutex_lock(&linda_memory->mem_mutex) != 0)
 	{
 		printf("pthread_mutex_lock(): %d", errno);
+		if(linda_logging)
+			syslog(3, "pthread_mutex_lock(): %d", errno);
 		return false;
 	}
 	
@@ -213,6 +205,8 @@ bool vlinda_output(const char * info_string, va_list * v_init)
 	if(pthread_mutex_unlock(&linda_memory->mem_mutex) != 0)
 	{
 		printf("pthread_mutex_unlock(): %d", errno);
+		if(linda_logging)
+			syslog(3, "pthread_mutex_unlock(): %d", errno);
 		return false;
 	}
 	
@@ -222,6 +216,8 @@ bool vlinda_output(const char * info_string, va_list * v_init)
 		if(pthread_cond_broadcast(&linda_memory->output_cond) != 0)
 		{
 			printf("pthread_cond_broadcast(): %d", errno);
+			if(linda_logging)
+				syslog(3, "pthread_cond_broadcast(): %d", errno);
 		}
 	}
 	
@@ -232,10 +228,9 @@ bool vlinda_output_unsafe(const char * info_string, va_list * v_init)
 	if(linda_memory->tuple_count >= TUPLE_COUNT)
 	{
 		printf("Tuple memory exhausted (%lu) (%u)", linda_memory->tuple_count, TUPLE_COUNT);
-		if (linda_logging)
-		{
+		if(linda_logging)
 			syslog(6, "Tuple memory exhausted (%lu) (%u)", linda_memory->tuple_count, TUPLE_COUNT);
-		}
+		
 		return false;
 	}
 	
@@ -330,10 +325,10 @@ bool vlinda_output_unsafe(const char * info_string, va_list * v_init)
 	}
 	
 	va_end(va_read);
-	if (linda_logging)
-	{
+	
+	if(linda_logging)
 		syslog(6, "Saved tuple");
-	}
+	
 	return true;
 }
 
@@ -631,6 +626,8 @@ bool vlinda_in_generic(bool to_remove, struct timeval timeout, const char * matc
 	if(pthread_mutex_lock(&linda_memory->mem_mutex) != 0)
 	{
 		printf("pthread_mutex_lock(): %d", errno);
+		if(linda_logging)
+			syslog(3, "pthread_mutex_lock(): %d", errno);
 		return false;
 	}
 	
@@ -639,6 +636,8 @@ bool vlinda_in_generic(bool to_remove, struct timeval timeout, const char * matc
 	if(pthread_mutex_unlock(&linda_memory->mem_mutex) != 0)
 	{
 		printf("pthread_mutex_unlock(): %d", errno);
+		if(linda_logging)
+			syslog(3, "pthread_mutex_unlock(): %d", errno);
 		return false;
 	}
 	
@@ -675,11 +674,13 @@ bool vlinda_in_generic_unsafe(bool to_remove, struct timeval timeout, const char
 			}
 			
 			printf("pthread_cond_timedwait(): %d\n", wait_result);
+			if(linda_logging)
+				syslog(3, "pthread_cond_timedwait(): %d", errno);
 			return false;
 		}
 	}
 
-	if (tuple_index == -1)
+	if(tuple_index == -1)
 	{
 		//printf("Matched tuple not found\n");
 		return false;
@@ -731,15 +732,13 @@ bool vlinda_in_generic_unsafe(bool to_remove, struct timeval timeout, const char
 
 	va_end(va_read);
 
-	if (to_remove)
+	if(to_remove)
 	{
 		//Delete tuple by replacing it and decrementing tuple_count.
-		memcpy(&linda_memory->first_tuple[tuple_index], &linda_memory->first_tuple[tuple_index + 1],
-			   (--linda_memory->tuple_count - tuple_index) * sizeof(struct tuple));
-		if (linda_logging)
-		{
+		memcpy(&linda_memory->first_tuple[tuple_index], &linda_memory->first_tuple[tuple_index + 1], (--linda_memory->tuple_count - tuple_index) * sizeof(struct tuple));
+		
+		if(linda_logging)
 			syslog(6, "Removed tuple");
-		}
 	}
 	return true;
 }
