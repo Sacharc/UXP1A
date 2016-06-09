@@ -212,7 +212,7 @@ bool vlinda_output(const char * info_string, va_list * v_init)
 	
 	if(inserted)
 	{
-		printf("Calling pthread_cond_broadcast()\n");
+		//printf("Calling pthread_cond_broadcast()\n");
 		if(pthread_cond_broadcast(&linda_memory->output_cond) != 0)
 		{
 			printf("pthread_cond_broadcast(): %d", errno);
@@ -663,7 +663,14 @@ bool vlinda_in_generic_unsafe(bool to_remove, struct timeval timeout, const char
 			break;
 		
 		//Jeśli się nie udało - czekamy. Jeśli wybije timeout - rezygnujemy
-		struct timespec timeout_timespec = {timeout_end_timeval.tv_sec, timeout_end_timeval.tv_usec * 1000};
+		time_t timeout_timespec_sec = timeout_end_timeval.tv_sec;
+		
+		//Poprawiamy zegar, żeby nie było więcej niż 10^9 nsec
+		unsigned long timeout_timespec_nsec = timeout_end_timeval.tv_usec * 1000;
+		timeout_timespec_sec += (timeout_timespec_nsec / (1000 * 1000 * 1000));
+		timeout_timespec_nsec %= (1000 * 1000 * 1000);
+		
+		struct timespec timeout_timespec = {timeout_timespec_sec, timeout_timespec_nsec};
 		int wait_result = pthread_cond_timedwait(&linda_memory->output_cond, &linda_memory->mem_mutex, &timeout_timespec);
 		if(wait_result != 0)
 		{
